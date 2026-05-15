@@ -19,11 +19,11 @@ blueprint:
     #################################################
     trigger_entity:
       name: "📱 Gerät / Sensor"
-      description: "Switch / Binary Sensor / Sensor"
+      description: "Switch / Binary Sensor / Sensor / Light"
       selector:
         entity:
           filter:
-            - domain: [switch, binary_sensor, sensor]
+            - domain: [switch, binary_sensor, sensor, light]
 
     trigger_from_state:
       name: "🔄 Von Zustand"
