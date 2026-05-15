@@ -5,16 +5,16 @@ blueprint:
     
     Erkennt wenn Geräte fertig sind über Stromverbrauch (Watt) – perfekt für Smart Plugs!
     
-    🔔 Intelligente Benachrichtigungen - Telegram, HA Companion App, Alexa, oder Custom
+    🔔 Intelligente Benachrichtigungen - Telegram, HA Companion App, Alexa, Custom
     💡 Licht-Integration - Farbkreis mit konfigurierbarer Dauer
     ⚡ Power-Sensor basiert - Erkennt Start & Ende automatisch
-    👥 Presence Awareness - Nur zuhause benachrichtigen
+    👥 Presence Awareness - Nur zuhause benachrichtigen (+ Timer für Ankunft!)
     🔄 Multi-Device Ready - Für alle Smart Plugs
     🎛️ 100% UI-konfigurierbar - Keine YAML-Bearbeitung
     🔒 Produktionsreif - Getestet mit echten Geräten
     
   domain: automation
-  source_url: https://github.com/yourusername/smart-home-blueprints
+  source_url: https://github.com/yourusername/smart-notify
   
   input:
     #################################################
@@ -83,7 +83,7 @@ blueprint:
           step: 0.25
     
     #################################################
-    # PRESENCE AWARENESS
+    # PRESENCE AWARENESS + TIMER
     #################################################
     presence_awareness:
       name: "👥 Presence Awareness aktivieren"
@@ -106,6 +106,17 @@ blueprint:
       default: "home"
       selector:
         text:
+    
+    presence_delay_minutes:
+      name: "⏱️ Presence Verzögerung (Timer)"
+      description: "Wie lange nach 'zu Hause' warten? (z.B. 3 Min um Treppe hochzugehen 😊)"
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 15
+          unit_of_measurement: "min"
+          mode: slider
     
     #################################################
     # LICHT-INTEGRATION
@@ -191,13 +202,13 @@ action:
         for:
           minutes: !input finishing_hysteresis
 
-  # Jetzt: Gerät ist fertig! Presence Check
+  # Jetzt: Gerät ist fertig! Presence Check + Timer
   - condition: or
     conditions:
       # Wenn Presence Awareness NICHT aktiviert
       - condition: template
         value_template: "{{ not (presence_awareness | bool) }}"
-      # Oder wenn aktiviert UND jemand zu Hause ist
+      # Oder wenn aktiviert UND jemand zu Hause ist + Timer abgelaufen
       - condition: and
         conditions:
           - condition: template
@@ -205,6 +216,9 @@ action:
           - condition: state
             entity_id: !input presence_entity
             state: !input presence_state
+          # Timer-Check: Presence Status ist länger als die Verzögerung aktiv
+          - condition: template
+            value_template: "{{ (as_timestamp(now()) - as_timestamp(states[presence_entity].last_changed)) > (presence_delay_minutes | int(0) * 60) }}"
 
   # LICHT einschalten (wenn aktiviert)
   - choose:
