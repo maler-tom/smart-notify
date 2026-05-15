@@ -12,7 +12,7 @@ Intelligente Home Assistant Blueprints für Geräte-Benachrichtigungen mit autom
 ### 📱 Smart Device Finished – State Based
 Für Geräte mit Zustandswechsel (Switch, Sensor, Binary Sensor)
 
-[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://github.com/maler-tom/smart-notify/blob/main/smart_device_power_based.yaml)
+https://github.com/maler-tom/smart-notify/blob/main/smart_device_power_based.yaml
 
 ### ⚡ Smart Device Finished – Power Based
 Für Geräte mit Stromverbrauch (Sonoff, Shelly, TP-Link, etc.)
