@@ -17,7 +17,8 @@ https://github.com/maler-tom/smart-notify/blob/main/smart_device_power_based.yam
 ### ⚡ Smart Device Finished – Power Based
 Für Geräte mit Stromverbrauch (Sonoff, Shelly, TP-Link, etc.)
 
-[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/maler-tom/ha-smart-blueprints/blob/main/blueprints/smart_device_power_based.yaml)
+https://github.com/maler-tom/smart-notify/blob/main/smart_device_power_based.yaml
+
 
 ---
 
