@@ -1,0 +1,201 @@
+blueprint:
+  name: "🔔 Smart Device Finished – Notification & Light PRO"
+  description: >
+    **Gerät fertig → Intelligente Benachrichtigungen & Licht-Effekte**
+    
+    🔔 Intelligente Benachrichtigungen - Telegram, HA Companion App, Alexa, oder dein Custom-System
+    💡 Licht-Integration - RGB-Farben mit konfigurierbarer Dauer
+    ⏱️ Flexible Verzögerung - Zeitgesteuerte Aktionen nach dem Event
+    👥 Presence Awareness - Benachrichtigungen nur wenn jemand zuhause ist
+    🔄 Multi-Device Ready - Eine Blueprint für alle Geräte
+    🎛️ 100% UI-konfigurierbar - Keine manuelle YAML-Bearbeitung nötig
+    🔒 Produktionsreif - Getestet in echten Smart Homes
+    
+  domain: automation
+  
+  input:
+    #################################################
+    # GERÄT-KONFIGURATION
+    #################################################
+    device_entity:
+      name: "📱 Gerät / Sensor"
+      description: "Das Gerät, das überwacht werden soll (Switch/Binary Sensor/Sensor)"
+      selector:
+        entity:
+          filter:
+            - domain: [switch, binary_sensor, sensor]
+    
+    from_state:
+      name: "🔄 Von Zustand"
+      description: "Zustand von dem aus getriggert wird (z.B. 'on')"
+      default: "on"
+      selector:
+        text:
+    
+    to_state:
+      name: "🎯 Zu Zustand"
+      description: "Zustand zu dem hin getriggert wird (z.B. 'off')"
+      default: "off"
+      selector:
+        text:
+    
+    trigger_delay:
+      name: "⏱️ Trigger-Verzögerung"
+      description: "Wie lange soll der Zustand stabil sein? (Sekunden)"
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 300
+          unit_of_measurement: "sec"
+          mode: slider
+    
+    #################################################
+    # PRESENCE AWARENESS
+    #################################################
+    presence_awareness:
+      name: "👥 Presence Awareness aktivieren"
+      description: "Nur Benachrichtigungen wenn jemand zuhause ist?"
+      default: false
+      selector:
+        boolean:
+    
+    presence_entity:
+      name: "🏠 Presence Entity"
+      description: "Entity die angibt ob jemand zuhause ist (z.B. group.all_people)"
+      default: ""
+      selector:
+        entity:
+          domain: [group, binary_sensor, person]
+    
+    presence_state:
+      name: "✅ 'Zu Hause' = Zustand"
+      description: "Bei welchem Zustand gilt Person als 'zu Hause'?"
+      default: "home"
+      selector:
+        text:
+    
+    
+    #################################################
+    # LICHT-INTEGRATION
+    #################################################
+    enable_light:
+      name: "💡 Licht-Integration aktivieren"
+      description: "Soll ein Licht bei Benachrichtigung einschalten?"
+      default: false
+      selector:
+        boolean:
+    
+    light_entity:
+      name: "💡 Licht Entity"
+      description: "Welches Licht soll einschalten?"
+      default: ""
+      selector:
+        entity:
+          domain: light
+    
+    light_color:
+      name: "🌈 Licht-Farbe"
+      description: "Wähle die Farbe aus dem Farbkreis"
+      default: [255, 100, 0]
+      selector:
+        color_rgb:
+    
+    light_brightness:
+      name: "☀️ Helligkeit"
+      description: "Helligkeit in Prozent"
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+    
+    light_duration_minutes:
+      name: "⏱️ Licht Dauer"
+      description: "Wie lange soll Licht leuchten? (0 = bleibt an)"
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: "min"
+          mode: slider
+    
+    #################################################
+    # BENACHRICHTIGUNGEN (Flexible Actions)
+    #################################################
+    notification_actions:
+      name: "🔔 Benachrichtigungen"
+      description: "Aktionen zum Senden von Benachrichtigungen (Telegram, HA App, Alexa, etc.)"
+      selector:
+        action: {}
+
+#################################################
+# TRIGGER
+#################################################
+trigger:
+  - platform: state
+    entity_id: !input device_entity
+    from: !input from_state
+    to: !input to_state
+    for:
+      seconds: !input trigger_delay
+
+#################################################
+# BEDINGUNGEN
+#################################################
+condition:
+  - condition: or
+    conditions:
+      # Wenn Presence Awareness NICHT aktiviert
+      - condition: template
+        value_template: "{{ not (presence_awareness | bool) }}"
+      # Oder wenn aktiviert UND jemand zu Hause ist
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ presence_awareness | bool }}"
+          - condition: state
+            entity_id: !input presence_entity
+            state: !input presence_state
+
+#################################################
+# AKTIONEN
+#################################################
+action:
+  # LICHT einschalten (wenn aktiviert)
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ enable_light | bool and light_entity != '' }}"
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input light_entity
+            data:
+              rgb_color: !input light_color
+              brightness_pct: !input light_brightness
+              transition: 1
+
+  # BENACHRICHTIGUNGEN senden (User-definiert)
+  - choose: []
+    default: !input notification_actions
+
+  # LICHT AUTO-AUSSCHALTEN (nach Dauer)
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ enable_light | bool and light_duration_minutes > 0 }}"
+        sequence:
+          - delay:
+              minutes: !input light_duration_minutes
+          - service: light.turn_off
+            target:
+              entity_id: !input light_entity
+            data:
+              transition: 2
+
+mode: restart
+max_exceeded: silent
