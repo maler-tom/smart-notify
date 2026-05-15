@@ -1,17 +1,20 @@
 blueprint:
-  name: "🔔 Smart Device Finished – Notification & Light PRO"
+  name: "📱 Smart Device Finished – State Based PRO"
   description: >
     **Gerät fertig → Intelligente Benachrichtigungen & Licht-Effekte**
     
-    🔔 Intelligente Benachrichtigungen - Telegram, HA Companion App, Alexa, oder dein Custom-System
-    💡 Licht-Integration - RGB-Farben mit konfigurierbarer Dauer
-    ⏱️ Flexible Verzögerung - Zeitgesteuerte Aktionen nach dem Event
-    👥 Presence Awareness - Benachrichtigungen nur wenn jemand zuhause ist
+    Für Switch/Sensor mit Zustandsänderung (ON/OFF)
+    
+    🔔 Intelligente Benachrichtigungen - Telegram, HA Companion App, Alexa, Custom
+    💡 Licht-Integration - Farbkreis mit konfigurierbarer Dauer
+    ⏱️ Flexible Verzögerung - Intelligente Trigger-Erkennung
+    👥 Presence Awareness - Nur zuhause benachrichtigen (+ Timer für Ankunft!)
     🔄 Multi-Device Ready - Eine Blueprint für alle Geräte
-    🎛️ 100% UI-konfigurierbar - Keine manuelle YAML-Bearbeitung nötig
+    🎛️ 100% UI-konfigurierbar - Keine YAML-Bearbeitung nötig
     🔒 Produktionsreif - Getestet in echten Smart Homes
     
   domain: automation
+  source_url: https://github.com/yourusername/smart-notify
   
   input:
     #################################################
@@ -49,9 +52,9 @@ blueprint:
           max: 300
           unit_of_measurement: "sec"
           mode: slider
-    
+
     #################################################
-    # PRESENCE AWARENESS
+    # PRESENCE AWARENESS + TIMER
     #################################################
     presence_awareness:
       name: "👥 Presence Awareness aktivieren"
@@ -75,6 +78,16 @@ blueprint:
       selector:
         text:
     
+    presence_delay_minutes:
+      name: "⏱️ Presence Verzögerung (Timer)"
+      description: "Wie lange nach 'zu Hause' warten? (z.B. 3 Min um Treppe hochzugehen 😊)"
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 15
+          unit_of_measurement: "min"
+          mode: slider
     
     #################################################
     # LICHT-INTEGRATION
@@ -124,7 +137,7 @@ blueprint:
           mode: slider
     
     #################################################
-    # BENACHRICHTIGUNGEN (Flexible Actions)
+    # BENACHRICHTIGUNGEN
     #################################################
     notification_actions:
       name: "🔔 Benachrichtigungen"
@@ -152,7 +165,7 @@ condition:
       # Wenn Presence Awareness NICHT aktiviert
       - condition: template
         value_template: "{{ not (presence_awareness | bool) }}"
-      # Oder wenn aktiviert UND jemand zu Hause ist
+      # Oder wenn aktiviert UND jemand zu Hause ist + Timer abgelaufen
       - condition: and
         conditions:
           - condition: template
@@ -160,6 +173,9 @@ condition:
           - condition: state
             entity_id: !input presence_entity
             state: !input presence_state
+          # Timer-Check: Presence Status ist länger als die Verzögerung aktiv
+          - condition: template
+            value_template: "{{ (as_timestamp(now()) - as_timestamp(states[presence_entity].last_changed)) > (presence_delay_minutes | int(0) * 60) }}"
 
 #################################################
 # AKTIONEN
