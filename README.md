@@ -89,7 +89,6 @@ Flexible Actions – Du entscheidest welche Services:
 1. **Blueprints herunterladen:**
    ```bash
    https://github.com/maler-tom/smart-notify/blob/main/smart_device_power_based.yaml
-   https://raw.githubusercontent.com/maler-tom/ha-smart-blueprints/main/smart_device_finished_notification_pro_v2_plus.yaml
    ```
 
 2. **In Home Assistant kopieren:**
