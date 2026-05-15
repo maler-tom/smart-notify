@@ -88,7 +88,7 @@ Flexible Actions – Du entscheidest welche Services:
 
 1. **Blueprints herunterladen:**
    ```bash
-   git clone https://github.com/yourusername/smart-home-blueprints.git
+   git clone https://github.com/maler-tom/smart-notify/blob/main/smart_device_power_based.yaml
    ```
 
 2. **In Home Assistant kopieren:**
