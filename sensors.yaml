@@ -1,0 +1,26 @@
+# Ist jemand zuhause?
+# ANPASSEN: person.DEINE_PERSON_1, person.DEINE_PERSON_2, etc.
+- binary_sensor:
+    - name: Ist jemand zuhause
+      unique_id: isAnyoneAtHome
+      state: >
+        {{
+          is_state('person.DEINE_PERSON_1', 'home')
+          or
+          is_state('person.DEINE_PERSON_2', 'home')
+        }}
+
+# Pending Notification Sensor
+- trigger:
+    - platform: event
+      event_type: set_entity_value
+      event_data:
+        entity_id: sensor.pending_notification_sensor
+  sensor:
+    - name: Pending Notification Sensor
+      unique_id: pending_notification_sensor
+      unit_of_measurement: ""
+      icon: mdi:format-list-group
+      state: "{{ trigger.event.data.state }}"
+      attributes:
+        list: "{{ trigger.event.data.attr.list }}"

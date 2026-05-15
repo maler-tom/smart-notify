@@ -1,0 +1,54 @@
+alias: Send pending notifications
+description: Send pending notifications when arriving home with delay
+triggers:
+  - entity_id:
+      - binary_sensor.ist_jemand_zuhause
+    to: "on"
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+
+conditions:
+  - condition: template
+    value_template: >-
+      {{ state_attr("automation.send_pending_notifications", "last_triggered")
+      == None or ( as_timestamp(now()) -
+      as_timestamp(state_attr("automation.send_pending_notifications",
+      "last_triggered")) |int(0) ) > 60 }}
+  - condition: numeric_state
+    entity_id: sensor.pending_notification_sensor
+    above: 0
+
+actions:
+  - alias: Set variables
+    variables:
+      notifications: >-
+        {{ state_attr('sensor.pending_notification_sensor', 'list') |
+        default([], true) }}
+  - delay: 15
+  - repeat:
+      while:
+        - condition: template
+          value_template: "{{ repeat.index <= notifications|length}}"
+      sequence:
+        - alias: Set variables
+          variables:
+            index: "{{ repeat.index -1 }}"
+            notification: "{{ notifications[index] }}"
+        - target:
+            entity_id: script.notify_those_at_home
+          data:
+            variables:
+              title: "{{ notification.title }}"
+              message: "{{ notification.message }}"
+              data: "{{ notification.data }}"
+              notify_when_away: false
+          action: script.turn_on
+  - event: set_entity_value
+    event_data:
+      entity_id: sensor.pending_notification_sensor
+      state: "0"
+      attr:
+        list: ""

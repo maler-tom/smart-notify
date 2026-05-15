@@ -1,0 +1,178 @@
+#################################################
+# Pending Notifications speichern
+#################################################
+
+append_pending_notification:
+  alias: Append pending notification
+  icon: mdi:notification-clear-all
+  mode: parallel
+  max: 10
+
+  fields:
+    title:
+      name: Title
+      description: Notification title
+      required: true
+    message:
+      name: Message
+      description: Notification message
+      required: true
+    data:
+      name: Data
+      description: Additional notification data
+      required: false
+      default: {}
+
+  sequence:
+    - variables:
+        appending_notification:
+          title: "{{ title | default('', true) }}"
+          message: "{{ message | default('', true) }}"
+          data: "{{ data | default({}) }}"
+          timestamp: "{{ now() }}"
+        pending_notifications: >
+          {{
+            (
+              state_attr(
+                'sensor.pending_notification_sensor',
+                'list'
+              ) | default([], true)
+            )
+            + [appending_notification]
+          }}
+
+    - event: set_entity_value
+      event_data:
+        entity_id: sensor.pending_notification_sensor
+        state: "{{ pending_notifications | length }}"
+        attr:
+          list: "{{ pending_notifications }}"
+
+#################################################
+# Benachrichtigung an Person 1
+# ANPASSEN: notify.mobile_app_DEIN_HANDY
+# ANPASSEN: notify.alexa_media_DEIN_ECHO
+#################################################
+
+notify_me:
+  alias: Notify Me
+  icon: mdi:notification-clear-all
+  mode: parallel
+  max: 10
+
+  fields:
+    title:
+      name: Title
+      required: true
+    message:
+      name: Message
+      required: true
+    data:
+      name: Data
+      required: false
+      default: {}
+
+  sequence:
+    - service: notify.mobile_app_DEIN_HANDY         # ANPASSEN
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+        data: "{{ data | default({}) }}"
+
+    - service: notify.alexa_media_DEIN_ECHO          # ANPASSEN
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+
+#################################################
+# Benachrichtigung an Person 2 (optional)
+# ANPASSEN: notify.mobile_app_ZWEITES_HANDY
+# ANPASSEN: notify.alexa_media_DEIN_ECHO
+#################################################
+
+notify_wife:
+  alias: Notify Wife
+  icon: mdi:notification-clear-all
+  mode: parallel
+  max: 10
+
+  fields:
+    title:
+      name: Title
+      required: true
+    message:
+      name: Message
+      required: true
+    data:
+      name: Data
+      required: false
+      default: {}
+
+  sequence:
+    - service: notify.mobile_app_ZWEITES_HANDY       # ANPASSEN
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+        data: "{{ data | default({}) }}"
+
+    - service: notify.alexa_media_DEIN_ECHO          # ANPASSEN
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+
+#################################################
+# Notification Verteiler
+# ANPASSEN: person.DEINE_PERSON_1
+# ANPASSEN: person.DEINE_PERSON_2
+#################################################
+
+notify_those_at_home:
+  alias: Notify people at home
+  icon: mdi:notification-clear-all
+  mode: parallel
+  max: 10
+
+  fields:
+    title:
+      name: Title
+      required: true
+      default: "Home Assistant"
+    message:
+      name: Message
+      required: true
+      default: "Neue Benachrichtigung"
+    data:
+      name: Data
+      required: false
+      default: {}
+
+  sequence:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: person.DEINE_PERSON_1       # ANPASSEN
+              state: "home"
+          sequence:
+            - service: script.notify_me
+              data:
+                title: "{{ title }}"
+                message: "{{ message }}"
+                data: "{{ data }}"
+
+        - conditions:
+            - condition: state
+              entity_id: person.DEINE_PERSON_2       # ANPASSEN (optional)
+              state: "home"
+          sequence:
+            - service: script.notify_wife
+              data:
+                title: "{{ title }}"
+                message: "{{ message }}"
+                data: "{{ data }}"
+
+      default:
+        - service: script.append_pending_notification
+          data:
+            title: "{{ title }}"
+            message: "{{ message }}"
+            data: "{{ data }}"

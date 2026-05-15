@@ -1,199 +1,125 @@
-# 🏠 Smart Home Blueprints
+# 🏠 HA Smart Blueprints
 
-Eine Sammlung von **produktionsreifen Home Assistant Blueprints** für intelligente Gerätbenachrichtigungen, Licht-Integration und Presence Awareness.
+Intelligente Home Assistant Blueprints für Geräte-Benachrichtigungen mit automatischem Pending-System.
 
----
-
-## 🚀 Features
-
-✨ **2 spezialisierte Blueprints:**
-- 📱 **State-Based** – Für Switch/Sensor mit ON/OFF Status
-- ⚡ **Power-Based** – Für Smart Plugs mit Watt-Sensoren
-
-✅ **Alle Blueprints enthalten:**
-- 🔔 **Intelligente Benachrichtigungen** – Telegram, HA App, Alexa, Custom Services
-- 💡 **Licht-Integration** – RGB-Farben mit Farbkreis-Selector
-- 👥 **Presence Awareness** – Nur benachrichtigen wenn jemand zuhause ist
-- 🎛️ **100% UI-konfigurierbar** – Keine YAML-Bearbeitung notwendig
-- 🔒 **Produktionsreif** – Getestet in realen Smart Homes
+- Jemand zuhause → Sofortige Benachrichtigung
+- Niemand zuhause → Benachrichtigung gespeichert → beim Heimkommen gesendet
 
 ---
 
-## 📋 Blueprints
+## 📦 Blueprints
 
-### 1️⃣ State-Based Blueprint
-**Für:** Switch, Binary Sensor, Sensor mit Zustandsänderung  
-**Beispiele:** Waschmaschine (ON/OFF), Türsensor, Bewegungsmelder
+### 📱 Smart Device Finished – State Based
+Für Geräte mit Zustandswechsel (Switch, Sensor, Binary Sensor)
 
-**Features:**
-- Auslösung nach Zustandsänderung (z.B. ON → OFF)
-- Konfigurierbare Verzögerung vor Trigger
-- Alle Standard-Features
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/maler-tom/ha-smart-blueprints/blob/main/blueprints/smart_device_state_based.yaml)
 
-**Verwendung:**
-- Waschmaschine mit Toggle-Switch
-- Spülmaschine mit Status-Sensor
-- Türen/Fenster Überwachung
-- Beliebige Sensoren mit definierten Zuständen
+### ⚡ Smart Device Finished – Power Based
+Für Geräte mit Stromverbrauch (Sonoff, Shelly, TP-Link, etc.)
+
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/maler-tom/ha-smart-blueprints/blob/main/blueprints/smart_device_power_based.yaml)
 
 ---
 
-### 2️⃣ Power-Based Blueprint
-**Für:** Smart Plugs mit Watt-Sensoren  
-**Beispiele:** Sonoff POW, Shelly, TP-Link Kasa
+## ⚙️ Installation
 
-**Features:**
-- Automatische Erkennung: Gerät startet → unter Stromverbrauch-Schwelle
-- Automatische Erkennung: Gerät fertig → unter Stromverbrauch-Schwelle
-- Konfigurierbare Start/End Thresholds in Watt
-- Hysterese-Einstellungen für stabile Erkennung
-- Alle Standard-Features
+### Schritt 1: Scripts einrichten
 
-**Verwendung:**
-- Waschmaschine mit Smart Plug
-- Spülmaschine mit Smart Plug
-- Trockner, Backofen, etc.
-- Alle Geräte mit variablem Stromverbrauch
+Inhalt von `scripts/scripts.yaml` in deine `scripts.yaml` kopieren und anpassen:
 
----
-
-## ⚙️ Gemeinsame Features (beide Blueprints)
-
-### 🔔 Benachrichtigungen
-Flexible Actions – Du entscheidest welche Services:
-- ✉️ **Telegram** – Chat-Benachrichtigungen
-- 📱 **Mobile App** – HA Companion App (Android/iOS)
-- 🔊 **Alexa** – Sprachausgabe auf Echo Devices
-- 🎤 **TTS** – Text-to-Speech
-- 📬 **Email** – Mail-Benachrichtigungen
-- 🔔 **Persistent Notification** – Im HA Dashboard
-- ⚙️ **Custom Services** – Beliebige andere Services
-
-### 💡 Licht-Integration
-- **Farbkreis-Selector** – Wähle die Farbe visuell, nicht per RGB-Code
-- **Helligkeit** – Slider 10-100%
-- **Auto-Aus** – Optional automatisch nach X Minuten ausschalten
-- **Sanfte Übergänge** – 1-2 Sekunden Transition
-
-### 👥 Presence Awareness
-- **Optional aktivierbar** – Für Privatsphäre & Effizienz
-- **Flexible Entities** – Nutze `group.all_people`, `person.*`, oder binary_sensor
-- **Konfigurierbare States** – "home", "away", "sleeping", etc.
-
----
-
-## 📦 Installation
-
-### Schnellstart (2 Minuten)
-
-1. **Blueprints herunterladen:**
-   ```bash
-   https://github.com/maler-tom/smart-notify/blob/main/smart_device_power_based.yaml
-   ```
-
-2. **In Home Assistant kopieren:**
-   ```
-   /config/blueprints/automation/
-   ```
-
-3. **In HA neu laden:**
-   - Settings → Automations & Scenes → ⟳ Reload Automations
-
-4. **Automation erstellen:**
-   - Settings → Automations & Scenes → Create Automation → Blueprint wählen
-
-Detaillierte Anleitung → siehe **INSTALLATION.md**
-
----
-
-## 🎯 Anwendungsbeispiele
-
-### Waschmaschine (State-Based)
+```yaml
+# ANPASSEN:
+notify.mobile_app_DEIN_HANDY      → z.B. notify.mobile_app_thomas_iphone
+notify.alexa_media_DEIN_ECHO      → z.B. notify.alexa_media_echo_dot
+person.DEINE_PERSON_1             → z.B. person.thomas
+person.DEINE_PERSON_2             → z.B. person.susi (optional)
 ```
-Gerät: switch.waschmaschine
-Von: "on" → Zu: "off"
-Presence: ✅ Aktiviert
-Licht: ✅ Blau, 5 Min
-Benachrichtigungen: Mobile App + Telegram
+
+### Schritt 2: Sensoren einrichten
+
+Inhalt von `sensors/sensors.yaml` in deine `configuration.yaml` kopieren:
+
+```yaml
+template: !include sensors.yaml
 ```
-→ Wenn Waschmaschine fertig ist UND jemand zuhause:
-- 🔔 Telegram + Mobile App Nachricht
-- 💡 Blaues Licht für 5 Min
-- 📱 HA Benachrichtigung
 
-### Smart Plug Waschmaschine (Power-Based)
+Personen anpassen:
+```yaml
+# ANPASSEN:
+person.DEINE_PERSON_1             → z.B. person.thomas
+person.DEINE_PERSON_2             → z.B. person.susi
 ```
-Power Sensor: sensor.waschmaschine_power
-Start-Schwelle: 100W
-End-Schwelle: 5W
-Presence: ✅ Aktiviert
-Licht: ✅ Orange, 10 Min
-Benachrichtigungen: Alexa + Mobile App
+
+### Schritt 3: Automation einrichten
+
+Inhalt von `automations/send_pending_notifications.yaml` in HA importieren:
+
+- Einstellungen → Automationen → Neue Automation → YAML einfügen
+
+### Schritt 4: HA neu starten
+
 ```
-→ Automatische Erkennung:
-- ⚡ Start: Stromverbrauch > 100W für 1 Min
-- ⚡ Fertig: Stromverbrauch < 5W für 5 Min
-- 🔊 Alexa sagt Nachricht an
-- 📱 Mobile App Benachrichtigung
-- 💡 Orange Licht für 10 Min
+Einstellungen → System → Neu starten
+```
+
+### Schritt 5: Blueprint importieren
+
+Die Import-Buttons oben verwenden oder manuell:
+
+- Blueprint YAML in `/config/blueprints/automation/` kopieren
+- Einstellungen → Automationen → Blueprint → Blueprint importieren
 
 ---
 
-## 🔧 Anforderungen
+## 🔔 Wie es funktioniert
 
-- **Home Assistant** 2024.1 oder neuer
-- **YAML Support** für Blueprints
-- Für Benachrichtigungen: Entsprechende Services konfiguriert
-  - Telegram: `telegram_bot` Integration
-  - Mobile App: `HA Companion App` Installation
-  - Alexa: `Alexa Media Player` Integration
-  - etc.
-
----
-
-## 🐛 Häufige Probleme
-
-### "Blueprint lässt sich nicht speichern"
-→ Stelle sicher, dass alle erforderlichen Input-Felder gefüllt sind
-
-### "Benachrichtigung wird nicht gesendet"
-→ Überprüfe, ob der Service in HA verfügbar ist:
-- Services → `notify.*` oder `alexa_media.*` sollten existieren
-
-### "Gerät wird nicht erkannt (Power-Based)"
-→ Überprüfe die Schwellenwerte:
-- Starte Gerät, schau in Logs was der Stromverbrauch ist
-- Passe Start-Schwelle & Thresholds an
+```
+Gerät fertig
+    ↓
+script.notify_those_at_home
+    ↓
+Person zuhause? ──JA──→ Sofort senden ✅
+    │
+   NEIN
+    ↓
+append_pending_notification
+(Benachrichtigung gespeichert)
+    ↓
+Person kommt nach Hause
+    ↓
+binary_sensor.ist_jemand_zuhause → "on"
+    ↓
+send_pending_notifications (3 Min. Verzögerung)
+    ↓
+Alle gespeicherten Benachrichtigungen senden ✅
+```
 
 ---
 
-## 📚 Weitere Dokumentation
+## 💡 Beispiel Konfiguration
 
-- **[INSTALLATION.md](./docs/INSTALLATION.md)** – Detaillierte Setup-Anleitung
-- **[STATE_BASED.md](./docs/STATE_BASED.md)** – Blueprint Detailanleitung
-- **[POWER_BASED.md](./docs/POWER_BASED.md)** – Power Sensor Anleitung
-- **[TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** – Häufige Fehler & Lösungen
+**Waschmaschine (State Based):**
+```
+📱 Gerät: switch.waschmaschine
+🔄 Von Zustand: on
+🎯 Zu Zustand: off
+⏱️ Verzögerung: 5 min
+💡 Licht: light.kueche (optional)
+🔔 Benachrichtigung: script.notify_those_at_home
+```
 
----
-
-## 🤝 Beitragen
-
-Hast du Verbesserungsvorschläge? Issues oder Pull Requests sind willkommen! 
-
----
-
-## 📄 Lizenz
-
-MIT License – Frei nutzbar, veränderbar und verteilbar
-
----
-
-## 🎉 Credits
-
-Basierend auf bewährten HA-Community-Patterns und optimiert für Production-Use.
-
-Made with ❤️ for Smart Home Automation
+**Spülmaschine (Power Based):**
+```
+⚡ Power Sensor: sensor.spuelmaschine_power
+⚡ Start-Schwelle: 5W
+⏱️ Start-Hysterese: 1 min
+⚡ End-Schwelle: 5W
+⏱️ End-Hysterese: 5 min
+🔔 Benachrichtigung: script.notify_those_at_home
+```
 
 ---
 
-**Noch Fragen?** → Schau in die [Dokumentation](./docs/) oder stelle ein Issue! 🚀
+## 🛠️ Entwickelt von
+
+[Smart Home Tom](https://github.com/maler-tom) – Professionelle Smart Home Lösungen

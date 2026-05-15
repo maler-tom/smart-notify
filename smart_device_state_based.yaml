@@ -1,104 +1,84 @@
 blueprint:
-  name: "📱 Smart Device Finished – State Based PRO"
+  name: "📱 Smart Device Finished – State Based"
   description: >
-    **Gerät fertig → Intelligente Benachrichtigungen & Licht-Effekte**
-    
-    Für Switch/Sensor mit Zustandsänderung (ON/OFF)
-    
-    🔔 Intelligente Benachrichtigungen - Telegram, HA Companion App, Alexa, Custom
-    💡 Licht-Integration - Farbkreis mit konfigurierbarer Dauer
-    ⏱️ Flexible Verzögerung - Intelligente Trigger-Erkennung
-    👥 Presence Awareness - Nur zuhause benachrichtigen (+ Timer für Ankunft!)
-    🔄 Multi-Device Ready - Eine Blueprint für alle Geräte
-    🎛️ 100% UI-konfigurierbar - Keine YAML-Bearbeitung nötig
-    🔒 Produktionsreif - Getestet in echten Smart Homes
-    
+    **Gerät fertig → Intelligente Benachrichtigungen & Licht**
+
+    Erkennt Zustandswechsel (ON/OFF) und benachrichtigt automatisch:
+    - Jemand zuhause → Sofortige Benachrichtigung
+    - Niemand zuhause → Benachrichtigung wird gespeichert & später gesendet
+
+    💡 Optionale Licht-Integration mit Farbkreis und Auto-Aus
+    🔄 Funktioniert mit Switch, Sensor und Binary Sensor
+
   domain: automation
-  source_url: https://github.com/yourusername/smart-notify
-  
+  source_url: https://github.com/maler-tom/ha-smart-blueprints
+
   input:
     #################################################
-    # GERÄT-KONFIGURATION
+    # SOSBALD - ZUSTAND TRIGGER
     #################################################
-    device_entity:
+    trigger_entity:
       name: "📱 Gerät / Sensor"
-      description: "Das Gerät, das überwacht werden soll (Switch/Binary Sensor/Sensor)"
+      description: "Switch / Binary Sensor / Sensor"
       selector:
         entity:
           filter:
             - domain: [switch, binary_sensor, sensor]
-    
-    from_state:
+
+    trigger_from_state:
       name: "🔄 Von Zustand"
-      description: "Zustand von dem aus getriggert wird (z.B. 'on')"
       default: "on"
       selector:
-        text:
-    
-    to_state:
+        select:
+          options:
+            - label: "on"
+              value: "on"
+            - label: "off"
+              value: "off"
+            - label: "toggle"
+              value: "toggle"
+
+    trigger_to_state:
       name: "🎯 Zu Zustand"
-      description: "Zustand zu dem hin getriggert wird (z.B. 'off')"
       default: "off"
       selector:
-        text:
-    
-    trigger_delay:
-      name: "⏱️ Trigger-Verzögerung"
-      description: "Wie lange soll der Zustand stabil sein? (Sekunden)"
+        select:
+          options:
+            - label: "on"
+              value: "on"
+            - label: "off"
+              value: "off"
+
+    trigger_delay_minutes:
+      name: "⏱️ Verzögerung (Minuten)"
       default: 0
       selector:
         number:
           min: 0
-          max: 300
+          max: 60
+          unit_of_measurement: "min"
+          mode: slider
+
+    trigger_delay_seconds:
+      name: "⏱️ Verzögerung (Sekunden)"
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 59
           unit_of_measurement: "sec"
           mode: slider
 
     #################################################
-    # PRESENCE AWARENESS + TIMER
-    #################################################
-    presence_awareness:
-      name: "👥 Presence Awareness aktivieren"
-      description: "Nur Benachrichtigungen wenn jemand zuhause ist?"
-      default: false
-      selector:
-        boolean:
-    
-    presence_entity:
-      name: "🏠 Presence Entity"
-      description: "Entity die angibt ob jemand zuhause ist (z.B. group.all_people)"
-      default: ""
-      selector:
-        entity:
-          domain: [group, binary_sensor, person]
-    
-    presence_state:
-      name: "✅ 'Zu Hause' = Zustand"
-      description: "Bei welchem Zustand gilt Person als 'zu Hause'?"
-      default: "home"
-      selector:
-        text:
-    
-    presence_delay_minutes:
-      name: "⏱️ Presence Verzögerung (Timer)"
-      description: "Wie lange nach 'zu Hause' warten? (z.B. 3 Min um Treppe hochzugehen 😊)"
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 15
-          unit_of_measurement: "min"
-          mode: slider
-    
-    #################################################
     # LICHT-INTEGRATION
     #################################################
     enable_light:
-      name: "💡 Licht-Integration aktivieren"
-      description: "Soll ein Licht bei Benachrichtigung einschalten?"
+      name: "💡 Licht aktivieren"
+      description: "Licht bei Benachrichtigung einschalten?"
       default: false
       selector:
         boolean:
-    
+
     light_entity:
       name: "💡 Licht Entity"
       description: "Welches Licht soll einschalten?"
@@ -106,17 +86,15 @@ blueprint:
       selector:
         entity:
           domain: light
-    
+
     light_color:
       name: "🌈 Licht-Farbe"
-      description: "Wähle die Farbe aus dem Farbkreis"
       default: [255, 100, 0]
       selector:
         color_rgb:
-    
+
     light_brightness:
-      name: "☀️ Helligkeit"
-      description: "Helligkeit in Prozent"
+      name: "☀️ Helligkeit (%)"
       default: 100
       selector:
         number:
@@ -124,10 +102,10 @@ blueprint:
           max: 100
           unit_of_measurement: "%"
           mode: slider
-    
+
     light_duration_minutes:
-      name: "⏱️ Licht Dauer"
-      description: "Wie lange soll Licht leuchten? (0 = bleibt an)"
+      name: "⏱️ Licht Dauer (Minuten)"
+      description: "0 = bleibt an"
       default: 0
       selector:
         number:
@@ -135,13 +113,13 @@ blueprint:
           max: 120
           unit_of_measurement: "min"
           mode: slider
-    
+
     #################################################
-    # BENACHRICHTIGUNGEN
+    # BENACHRICHTIGUNG
     #################################################
     notification_actions:
       name: "🔔 Benachrichtigungen"
-      description: "Aktionen zum Senden von Benachrichtigungen (Telegram, HA App, Alexa, etc.)"
+      description: "Was soll bei Trigger passieren"
       selector:
         action: {}
 
@@ -150,66 +128,57 @@ blueprint:
 #################################################
 trigger:
   - platform: state
-    entity_id: !input device_entity
-    from: !input from_state
-    to: !input to_state
+    entity_id: !input trigger_entity
+    from: !input trigger_from_state
+    to: !input trigger_to_state
     for:
-      seconds: !input trigger_delay
+      minutes: !input trigger_delay_minutes
+      seconds: !input trigger_delay_seconds
 
 #################################################
-# BEDINGUNGEN
+# CONDITIONS
 #################################################
-condition:
-  - condition: or
-    conditions:
-      # Wenn Presence Awareness NICHT aktiviert
-      - condition: template
-        value_template: "{{ not (presence_awareness | bool) }}"
-      # Oder wenn aktiviert UND jemand zu Hause ist + Timer abgelaufen
-      - condition: and
-        conditions:
-          - condition: template
-            value_template: "{{ presence_awareness | bool }}"
-          - condition: state
-            entity_id: !input presence_entity
-            state: !input presence_state
-          # Timer-Check: Presence Status ist länger als die Verzögerung aktiv
-          - condition: template
-            value_template: "{{ (as_timestamp(now()) - as_timestamp(states[presence_entity].last_changed)) > (presence_delay_minutes | int(0) * 60) }}"
+condition: []
 
 #################################################
-# AKTIONEN
+# ACTIONS
 #################################################
 action:
-  # LICHT einschalten (wenn aktiviert)
+  # Variablen einlesen
+  - variables:
+      use_light: !input enable_light
+      light: !input light_entity
+      light_duration: !input light_duration_minutes
+
+  # Licht einschalten
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ enable_light | bool and light_entity != '' }}"
+            value_template: "{{ use_light and light != '' }}"
         sequence:
           - service: light.turn_on
             target:
-              entity_id: !input light_entity
+              entity_id: "{{ light }}"
             data:
               rgb_color: !input light_color
               brightness_pct: !input light_brightness
               transition: 1
 
-  # BENACHRICHTIGUNGEN senden (User-definiert)
+  # Benachrichtigungen
   - choose: []
     default: !input notification_actions
 
-  # LICHT AUTO-AUSSCHALTEN (nach Dauer)
+  # Licht Auto-Aus
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ enable_light | bool and light_duration_minutes > 0 }}"
+            value_template: "{{ use_light and light != '' and light_duration | int(0) > 0 }}"
         sequence:
           - delay:
-              minutes: !input light_duration_minutes
+              minutes: "{{ light_duration }}"
           - service: light.turn_off
             target:
-              entity_id: !input light_entity
+              entity_id: "{{ light }}"
             data:
               transition: 2
 
