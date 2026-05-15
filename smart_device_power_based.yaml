@@ -1,39 +1,33 @@
 blueprint:
-  name: "⚡ Smart Device Finished – Power Sensor PRO"
+  name: "⚡ Smart Device Finished – Power Based"
   description: >
-    **Waschmaschine/Spülmaschine fertig → Intelligente Benachrichtigungen & Licht**
-    
-    Erkennt wenn Geräte fertig sind über Stromverbrauch (Watt) – perfekt für Smart Plugs!
-    
-    🔔 Intelligente Benachrichtigungen - Telegram, HA Companion App, Alexa, Custom
-    💡 Licht-Integration - Farbkreis mit konfigurierbarer Dauer
-    ⚡ Power-Sensor basiert - Erkennt Start & Ende automatisch
-    👥 Presence Awareness - Nur zuhause benachrichtigen (+ Timer für Ankunft!)
-    🔄 Multi-Device Ready - Für alle Smart Plugs
-    🎛️ 100% UI-konfigurierbar - Keine YAML-Bearbeitung
-    🔒 Produktionsreif - Getestet mit echten Geräten
-    
+    **Waschmaschine/Spülmaschine fertig via Stromverbrauch**
+
+    Erkennt Gerät-Start & Ende automatisch über Watt-Sensor:
+    - Jemand zuhause → Sofortige Benachrichtigung
+    - Niemand zuhause → Benachrichtigung wird gespeichert & später gesendet
+
+    💡 Optionale Licht-Integration - einfach Licht auswählen
+    ⚡ Funktioniert mit Sonoff, Shelly, TP-Link und anderen Smart Plugs
+
   domain: automation
-  source_url: https://github.com/yourusername/smart-notify
-  
+  source_url: https://github.com/maler-tom/ha-smart-blueprints
+
   input:
     #################################################
-    # POWER SENSOR KONFIGURATION
+    # SOSBALD - POWER SENSOR
     #################################################
     power_sensor:
       name: "⚡ Power Sensor"
-      description: "Stromverbrauch Sensor (z.B. von Sonoff, Shelly, TP-Link)"
+      description: "Stromverbrauch in Watt (Sonoff, Shelly, etc.)"
       selector:
         entity:
           domain: sensor
           device_class: power
-    
-    #################################################
-    # START-SCHWELLE
-    #################################################
+
     starting_threshold:
       name: "⚡ Start-Schwelle (Watt)"
-      description: "Stromverbrauch ab dem Gerät als 'gestartet' gilt"
+      description: "Ab wieviel Watt startet das Gerät?"
       default: 5
       selector:
         number:
@@ -42,10 +36,10 @@ blueprint:
           unit_of_measurement: "W"
           mode: slider
           step: 1
-    
+
     starting_hysteresis:
-      name: "⏱️ Start-Hysterese"
-      description: "Wie lange über Schwelle, bevor Start erkannt wird?"
+      name: "⏱️ Start-Hysterese (Minuten)"
+      description: "Wie lange über der Schwelle?"
       default: 1
       selector:
         number:
@@ -54,13 +48,10 @@ blueprint:
           unit_of_measurement: "min"
           mode: slider
           step: 0.25
-    
-    #################################################
-    # END-SCHWELLE
-    #################################################
+
     finishing_threshold:
       name: "⚡ End-Schwelle (Watt)"
-      description: "Stromverbrauch unter dem Gerät als 'fertig' gilt"
+      description: "Unter wieviel Watt ist das Gerät fertig?"
       default: 5
       selector:
         number:
@@ -69,10 +60,10 @@ blueprint:
           unit_of_measurement: "W"
           mode: slider
           step: 1
-    
+
     finishing_hysteresis:
-      name: "⏱️ End-Hysterese"
-      description: "Wie lange unter Schwelle, bevor Fertig erkannt wird?"
+      name: "⏱️ End-Hysterese (Minuten)"
+      description: "Wie lange unter der Schwelle?"
       default: 5
       selector:
         number:
@@ -81,71 +72,26 @@ blueprint:
           unit_of_measurement: "min"
           mode: slider
           step: 0.25
-    
-    #################################################
-    # PRESENCE AWARENESS + TIMER
-    #################################################
-    presence_awareness:
-      name: "👥 Presence Awareness aktivieren"
-      description: "Nur Benachrichtigungen wenn jemand zuhause ist?"
-      default: false
-      selector:
-        boolean:
-    
-    presence_entity:
-      name: "🏠 Presence Entity"
-      description: "Entity die angibt ob jemand zuhause ist (z.B. group.all_people)"
-      default: ""
-      selector:
-        entity:
-          domain: [group, binary_sensor, person]
-    
-    presence_state:
-      name: "✅ 'Zu Hause' = Zustand"
-      description: "Bei welchem Zustand gilt Person als zu Hause?"
-      default: "home"
-      selector:
-        text:
-    
-    presence_delay_minutes:
-      name: "⏱️ Presence Verzögerung (Timer)"
-      description: "Wie lange nach 'zu Hause' warten? (z.B. 3 Min um Treppe hochzugehen 😊)"
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 15
-          unit_of_measurement: "min"
-          mode: slider
-    
+
     #################################################
     # LICHT-INTEGRATION
     #################################################
-    enable_light:
-      name: "💡 Licht-Integration aktivieren"
-      description: "Soll ein Licht bei Fertig-Signal einschalten?"
-      default: false
-      selector:
-        boolean:
-    
     light_entity:
       name: "💡 Licht Entity"
-      description: "Welches Licht soll einschalten?"
+      description: "Licht auswählen (leer lassen = kein Licht)"
       default: ""
       selector:
         entity:
           domain: light
-    
+
     light_color:
       name: "🌈 Licht-Farbe"
-      description: "Wähle die Farbe aus dem Farbkreis"
       default: [255, 100, 0]
       selector:
         color_rgb:
-    
+
     light_brightness:
-      name: "☀️ Helligkeit"
-      description: "Helligkeit in Prozent"
+      name: "☀️ Helligkeit (%)"
       default: 100
       selector:
         number:
@@ -153,10 +99,10 @@ blueprint:
           max: 100
           unit_of_measurement: "%"
           mode: slider
-    
+
     light_duration_minutes:
-      name: "⏱️ Licht Dauer"
-      description: "Wie lange soll Licht leuchten? (0 = bleibt an)"
+      name: "⏱️ Licht Dauer (Minuten)"
+      description: "0 = bleibt an"
       default: 0
       selector:
         number:
@@ -164,18 +110,18 @@ blueprint:
           max: 120
           unit_of_measurement: "min"
           mode: slider
-    
+
     #################################################
-    # BENACHRICHTIGUNGEN
+    # BENACHRICHTIGUNG
     #################################################
     notification_actions:
       name: "🔔 Benachrichtigungen"
-      description: "Aktionen wenn Gerät fertig ist (Telegram, HA App, Alexa, etc.)"
+      description: "Was soll bei Trigger passieren"
       selector:
         action: {}
 
 #################################################
-# TRIGGER: GERÄT STARTET (über Schwelle)
+# TRIGGER
 #################################################
 trigger:
   - platform: numeric_state
@@ -183,18 +129,17 @@ trigger:
     above: !input starting_threshold
     for:
       minutes: !input starting_hysteresis
-    id: "appliance_started"
 
 #################################################
-# BEDINGUNG: Keine zusätzlichen
+# CONDITIONS
 #################################################
 condition: []
 
 #################################################
-# AKTIONEN
+# ACTIONS
 #################################################
 action:
-  # Warte bis Gerät fertig ist (unter Schwelle)
+  # Warte bis Gerät fertig ist
   - wait_for_trigger:
       - platform: numeric_state
         entity_id: !input power_sensor
@@ -202,55 +147,31 @@ action:
         for:
           minutes: !input finishing_hysteresis
 
-  # Jetzt: Gerät ist fertig! Presence Check + Timer
-  - condition: or
-    conditions:
-      # Wenn Presence Awareness NICHT aktiviert
-      - condition: template
-        value_template: "{{ not (presence_awareness | bool) }}"
-      # Oder wenn aktiviert UND jemand zu Hause ist + Timer abgelaufen
-      - condition: and
-        conditions:
-          - condition: template
-            value_template: "{{ presence_awareness | bool }}"
-          - condition: state
-            entity_id: !input presence_entity
-            state: !input presence_state
-          # Timer-Check: Presence Status ist länger als die Verzögerung aktiv
-          - condition: template
-            value_template: "{{ (as_timestamp(now()) - as_timestamp(states[presence_entity].last_changed)) > (presence_delay_minutes | int(0) * 60) }}"
+  # Licht einschalten
+  - service: light.turn_on
+    target:
+      entity_id: !input light_entity
+    data:
+      rgb_color: !input light_color
+      brightness_pct: !input light_brightness
+      transition: 1
 
-  # LICHT einschalten (wenn aktiviert)
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ enable_light | bool and light_entity != '' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light_entity
-            data:
-              rgb_color: !input light_color
-              brightness_pct: !input light_brightness
-              transition: 1
-
-  # BENACHRICHTIGUNGEN senden (User-definiert)
+  # Benachrichtigungen
   - choose: []
     default: !input notification_actions
 
-  # LICHT AUTO-AUSSCHALTEN (nach Dauer)
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ enable_light | bool and light_duration_minutes > 0 }}"
-        sequence:
-          - delay:
-              minutes: !input light_duration_minutes
-          - service: light.turn_off
-            target:
-              entity_id: !input light_entity
-            data:
-              transition: 2
+  # Licht Auto-Aus
+  - if:
+      - condition: template
+        value_template: "{{ light_duration_minutes | int(0) > 0 }}"
+    then:
+      - delay:
+          minutes: !input light_duration_minutes
+      - service: light.turn_off
+        target:
+          entity_id: !input light_entity
+        data:
+          transition: 2
 
 mode: single
 max_exceeded: silent
