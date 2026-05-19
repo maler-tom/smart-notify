@@ -4,14 +4,14 @@ blueprint:
     **Gerät fertig → Intelligente Benachrichtigungen & Licht**
 
     Erkennt Zustandswechsel (ON/OFF) und benachrichtigt automatisch:
-    - Jemand zuhause → Sofortige Benachrichtigung
+    - Jemand zuhause → Sofortige Benachrichtigung + Licht
     - Niemand zuhause → Benachrichtigung wird gespeichert & später gesendet
 
-    💡 Optionale Licht-Integration mit Farbkreis und Auto-Aus
+    💡 Optionale Licht-Integration - nur wenn jemand zuhause ist!
     🔄 Funktioniert mit Switch, Sensor und Binary Sensor
 
   domain: automation
-  source_url: https://github.com/maler-tom/ha-smart-blueprints
+  source_url: https://github.com/maler-tom/smart-notify
 
   input:
     #################################################
@@ -74,7 +74,7 @@ blueprint:
     #################################################
     enable_light:
       name: "💡 Licht aktivieren"
-      description: "Licht bei Benachrichtigung einschalten?"
+      description: "Licht einschalten? (nur wenn jemand zuhause ist!)"
       default: false
       selector:
         boolean:
@@ -150,11 +150,14 @@ action:
       light: !input light_entity
       light_duration: !input light_duration_minutes
 
-  # Licht einschalten
+  # Licht NUR einschalten wenn jemand zuhause ist
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ use_light and light != '' }}"
+            value_template: "{{ use_light | bool(false) and light != '' }}"
+          - condition: state
+            entity_id: binary_sensor.ist_jemand_zuhause
+            state: "on"
         sequence:
           - service: light.turn_on
             target:
@@ -168,11 +171,14 @@ action:
   - choose: []
     default: !input notification_actions
 
-  # Licht Auto-Aus
+  # Licht Auto-Aus (nur wenn jemand zuhause)
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ use_light and light != '' and light_duration | int(0) > 0 }}"
+            value_template: "{{ use_light | bool(false) and light != '' and light_duration | int(0) > 0 }}"
+          - condition: state
+            entity_id: binary_sensor.ist_jemand_zuhause
+            state: "on"
         sequence:
           - delay:
               minutes: "{{ light_duration }}"
