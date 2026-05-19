@@ -4,6 +4,207 @@ blueprint:
     **Waschmaschine/Spülmaschine fertig via Stromverbrauch**
 
     Erkennt Gerät-Start & Ende automatisch über Watt-Sensor:
+    - Jemand zuhause → Sofortige Benachrichtigung + Licht
+    - Niemand zuhause → Benachrichtigung wird gespeichert & später gesendet
+
+    💡 Optionale Licht-Integration - nur wenn jemand zuhause ist!
+    ⚡ Funktioniert mit Sonoff, Shelly, TP-Link und anderen Smart Plugs
+
+  domain: automation
+  source_url: https://github.com/maler-tom/smart-notify
+
+  input:
+    #################################################
+    # SOSBALD - POWER SENSOR
+    #################################################
+    power_sensor:
+      name: "⚡ Power Sensor"
+      description: "Stromverbrauch in Watt (Sonoff, Shelly, etc.)"
+      selector:
+        entity:
+          domain: sensor
+          device_class: power
+
+    starting_threshold:
+      name: "⚡ Start-Schwelle (Watt)"
+      description: "Ab wieviel Watt startet das Gerät?"
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "W"
+          mode: slider
+          step: 1
+
+    starting_hysteresis:
+      name: "⏱️ Start-Hysterese (Minuten)"
+      description: "Wie lange über der Schwelle?"
+      default: 1
+      selector:
+        number:
+          min: 0.25
+          max: 60
+          unit_of_measurement: "min"
+          mode: slider
+          step: 0.25
+
+    finishing_threshold:
+      name: "⚡ End-Schwelle (Watt)"
+      description: "Unter wieviel Watt ist das Gerät fertig?"
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "W"
+          mode: slider
+          step: 1
+
+    finishing_hysteresis:
+      name: "⏱️ End-Hysterese (Minuten)"
+      description: "Wie lange unter der Schwelle?"
+      default: 5
+      selector:
+        number:
+          min: 0.25
+          max: 60
+          unit_of_measurement: "min"
+          mode: slider
+          step: 0.25
+
+    #################################################
+    # LICHT-INTEGRATION
+    #################################################
+    enable_light:
+      name: "💡 Licht aktivieren"
+      description: "Licht einschalten? (nur wenn jemand zuhause ist!)"
+      default: false
+      selector:
+        boolean:
+
+    light_entity:
+      name: "💡 Licht Entity"
+      description: "Welches Licht soll einschalten?"
+      default: ""
+      selector:
+        entity:
+          domain: light
+
+    light_color:
+      name: "🌈 Licht-Farbe"
+      default: [255, 100, 0]
+      selector:
+        color_rgb:
+
+    light_brightness:
+      name: "☀️ Helligkeit (%)"
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+
+    light_duration_minutes:
+      name: "⏱️ Licht Dauer (Minuten)"
+      description: "0 = bleibt an"
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: "min"
+          mode: slider
+
+    #################################################
+    # BENACHRICHTIGUNG
+    #################################################
+    notification_actions:
+      name: "🔔 Benachrichtigungen"
+      description: "Was soll bei Trigger passieren"
+      selector:
+        action: {}
+
+#################################################
+# TRIGGER
+#################################################
+trigger:
+  - platform: numeric_state
+    entity_id: !input power_sensor
+    above: !input starting_threshold
+    for:
+      minutes: !input starting_hysteresis
+
+#################################################
+# CONDITIONS
+#################################################
+condition: []
+
+#################################################
+# ACTIONS
+#################################################
+action:
+  # Warte bis Gerät fertig ist
+  - wait_for_trigger:
+      - platform: numeric_state
+        entity_id: !input power_sensor
+        below: !input finishing_threshold
+        for:
+          minutes: !input finishing_hysteresis
+
+  # Variablen einlesen
+  - variables:
+      use_light: !input enable_light
+      light: !input light_entity
+      light_duration: !input light_duration_minutes
+
+  # Licht NUR einschalten wenn jemand zuhause ist
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ use_light | bool(false) and light != '' }}"
+          - condition: state
+            entity_id: binary_sensor.ist_jemand_zuhause
+            state: "on"
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: "{{ light }}"
+            data:
+              rgb_color: !input light_color
+              brightness_pct: !input light_brightness
+              transition: 1
+
+  # Benachrichtigungen
+  - choose: []
+    default: !input notification_actions
+
+  # Licht Auto-Aus (nur wenn jemand zuhause)
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ use_light | bool(false) and light != '' and light_duration | int(0) > 0 }}"
+          - condition: state
+            entity_id: binary_sensor.ist_jemand_zuhause
+            state: "on"
+        sequence:
+          - delay:
+              minutes: "{{ light_duration }}"
+          - service: light.turn_off
+            target:
+              entity_id: "{{ light }}"
+            data:
+              transition: 2
+
+mode: single
+max_exceeded: silentblueprint:
+  name: "⚡ Smart Device Finished – Power Based"
+  description: >
+    **Waschmaschine/Spülmaschine fertig via Stromverbrauch**
+
+    Erkennt Gerät-Start & Ende automatisch über Watt-Sensor:
     - Jemand zuhause → Sofortige Benachrichtigung
     - Niemand zuhause → Benachrichtigung wird gespeichert & später gesendet
 
