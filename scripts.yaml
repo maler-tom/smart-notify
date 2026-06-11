@@ -17,206 +17,9 @@ append_pending_notification:
       name: Message
       description: Notification message
       required: true
-
-  sequence:
-    - variables:
-        appending_notification:
-          title: "{{ title | default('', true) }}"
-          message: "{{ message | default('', true) }}"
-          timestamp: "{{ now() }}"
-        pending_notifications: >
-          {{
-            (
-              state_attr(
-                'sensor.pending_notification_sensor',
-                'list'
-              ) | default([], true)
-            )
-            + [appending_notification]
-          }}
-
-    - event: set_entity_value
-      event_data:
-        entity_id: sensor.pending_notification_sensor
-        state: "{{ pending_notifications | length }}"
-        attr:
-          list: "{{ pending_notifications }}"
-
-#################################################
-# Person 1 Benachrichtigung
-# ANPASSEN: notify.mobile_app_DEIN_HANDY
-# ANPASSEN: notify.alexa_media_DEIN_ECHO
-#################################################
-
-notify_me:
-  alias: Notify Me
-  icon: mdi:notification-clear-all
-  mode: parallel
-  max: 10
-
-  fields:
-    title:
-      name: Title
-      required: true
-    message:
-      name: Message
-      required: true
-
-  sequence:
-    - service: notify.mobile_app_DEIN_HANDY          # ⚠️ ANPASSEN
-      data:
-        title: "{{ title }}"
-        message: "{{ message }}"
-
-    - service: notify.alexa_media_DEIN_ECHO          # ⚠️ ANPASSEN
-      data:
-        message: "{{ message }}"
-
-#################################################
-# Person 2 Benachrichtigung (optional)
-# ANPASSEN: notify.mobile_app_ZWEITES_HANDY
-# ANPASSEN: notify.alexa_media_DEIN_ECHO
-#################################################
-
-notify_wife:
-  alias: Notify Wife
-  icon: mdi:notification-clear-all
-  mode: parallel
-  max: 10
-
-  fields:
-    title:
-      name: Title
-      required: true
-    message:
-      name: Message
-      required: true
-
-  sequence:
-    - service: notify.mobile_app_ZWEITES_HANDY       # ⚠️ ANPASSEN
-      data:
-        title: "{{ title }}"
-        message: "{{ message }}"
-
-    - service: notify.alexa_media_DEIN_ECHO          # ⚠️ ANPASSEN
-      data:
-        message: "{{ message }}"
-
-#################################################
-# Person 3 Benachrichtigung (optional)
-# ANPASSEN: notify.mobile_app_DRITTES_HANDY
-# ANPASSEN: notify.alexa_media_DEIN_ECHO
-#################################################
-
-notify_valentina:
-  alias: Notify Person 3
-  icon: mdi:notification-clear-all
-  mode: parallel
-  max: 10
-
-  fields:
-    title:
-      name: Title
-      required: true
-    message:
-      name: Message
-      required: true
-
-  sequence:
-    - service: notify.mobile_app_DRITTES_HANDY       # ⚠️ ANPASSEN
-      data:
-        title: "{{ title }}"
-        message: "{{ message }}"
-
-    - service: notify.alexa_media_DEIN_ECHO          # ⚠️ ANPASSEN
-      data:
-        message: "{{ message }}"
-
-#################################################
-# Notification Verteiler
-# ANPASSEN: person.PERSON_1
-# ANPASSEN: person.PERSON_2
-# ANPASSEN: person.PERSON_3
-#################################################
-
-notify_those_at_home:
-  alias: Notify people at home
-  icon: mdi:notification-clear-all
-  mode: parallel
-  max: 10
-
-  fields:
-    title:
-      name: Title
-      required: true
-      default: "Home Assistant"
-    message:
-      name: Message
-      required: true
-      default: "Neue Benachrichtigung"
-
-  sequence:
-    - choose:
-        # Person 1 zuhause
-        - conditions:
-            - condition: state
-              entity_id: person.PERSON_1              # ⚠️ ANPASSEN
-              state: "home"
-          sequence:
-            - service: script.notify_me
-              data:
-                title: "{{ title }}"
-                message: "{{ message }}"
-
-        # Person 2 zuhause (optional)
-        - conditions:
-            - condition: state
-              entity_id: person.PERSON_2              # ⚠️ ANPASSEN
-              state: "home"
-          sequence:
-            - service: script.notify_wife
-              data:
-                title: "{{ title }}"
-                message: "{{ message }}"
-
-        # Person 3 zuhause (optional)
-        - conditions:
-            - condition: state
-              entity_id: person.PERSON_3              # ⚠️ ANPASSEN
-              state: "home"
-          sequence:
-            - service: script.notify_valentina
-              data:
-                title: "{{ title }}"
-                message: "{{ message }}"
-
-      # Niemand zuhause → speichern
-      default:
-        - service: script.append_pending_notification
-          data:
-            title: "{{ title }}"
-            message: "{{ message }}"#################################################
-# Pending Notifications speichern
-#################################################
-
-append_pending_notification:
-  alias: Append pending notification
-  icon: mdi:notification-clear-all
-  mode: parallel
-  max: 10
-
-  fields:
-    title:
-      name: Title
-      description: Notification title
-      required: true
-    message:
-      name: Message
-      description: Notification message
-      required: true
     data:
       name: Data
-      description: Additional notification data
+      description: Additional notification data (optional)
       required: false
       default: {}
 
@@ -246,9 +49,9 @@ append_pending_notification:
           list: "{{ pending_notifications }}"
 
 #################################################
-# Benachrichtigung an Person 1
+# Person 1 Benachrichtigung
 # ANPASSEN: notify.mobile_app_DEIN_HANDY
-# ANPASSEN: notify.alexa_media_DEIN_ECHO
+# ANPASSEN: notify.alexa_media_DEIN_ECHO (optional)
 #################################################
 
 notify_me:
@@ -266,25 +69,25 @@ notify_me:
       required: true
     data:
       name: Data
+      description: Additional notification data (optional)
       required: false
       default: {}
 
   sequence:
-    - service: notify.mobile_app_DEIN_HANDY         # ANPASSEN
+    - action: notify.mobile_app_DEIN_HANDY          # ⚠️ ANPASSEN
       data:
         title: "{{ title }}"
         message: "{{ message }}"
         data: "{{ data | default({}) }}"
 
-    - service: notify.alexa_media_DEIN_ECHO          # ANPASSEN
+    - action: notify.alexa_media_DEIN_ECHO          # ⚠️ ANPASSEN (optional)
       data:
-        title: "{{ title }}"
         message: "{{ message }}"
 
 #################################################
-# Benachrichtigung an Person 2 (optional)
+# Person 2 Benachrichtigung (optional)
 # ANPASSEN: notify.mobile_app_ZWEITES_HANDY
-# ANPASSEN: notify.alexa_media_DEIN_ECHO
+# ANPASSEN: notify.alexa_media_DEIN_ECHO (optional)
 #################################################
 
 notify_wife:
@@ -302,25 +105,62 @@ notify_wife:
       required: true
     data:
       name: Data
+      description: Additional notification data (optional)
       required: false
       default: {}
 
   sequence:
-    - service: notify.mobile_app_ZWEITES_HANDY       # ANPASSEN
+    - action: notify.mobile_app_ZWEITES_HANDY       # ⚠️ ANPASSEN
       data:
         title: "{{ title }}"
         message: "{{ message }}"
         data: "{{ data | default({}) }}"
 
-    - service: notify.alexa_media_DEIN_ECHO          # ANPASSEN
+    - action: notify.alexa_media_DEIN_ECHO          # ⚠️ ANPASSEN (optional)
+      data:
+        message: "{{ message }}"
+
+#################################################
+# Person 3 Benachrichtigung (optional)
+# ANPASSEN: notify.mobile_app_DRITTES_HANDY
+# ANPASSEN: notify.alexa_media_DEIN_ECHO (optional)
+#################################################
+
+notify_valentina:
+  alias: Notify Person 3
+  icon: mdi:notification-clear-all
+  mode: parallel
+  max: 10
+
+  fields:
+    title:
+      name: Title
+      required: true
+    message:
+      name: Message
+      required: true
+    data:
+      name: Data
+      description: Additional notification data (optional)
+      required: false
+      default: {}
+
+  sequence:
+    - action: notify.mobile_app_DRITTES_HANDY       # ⚠️ ANPASSEN
       data:
         title: "{{ title }}"
+        message: "{{ message }}"
+        data: "{{ data | default({}) }}"
+
+    - action: notify.alexa_media_DEIN_ECHO          # ⚠️ ANPASSEN (optional)
+      data:
         message: "{{ message }}"
 
 #################################################
 # Notification Verteiler
-# ANPASSEN: person.DEINE_PERSON_1
-# ANPASSEN: person.DEINE_PERSON_2
+# ANPASSEN: person.PERSON_1
+# ANPASSEN: person.PERSON_2
+# ANPASSEN: person.PERSON_3 (optional)
 #################################################
 
 notify_those_at_home:
@@ -340,36 +180,64 @@ notify_those_at_home:
       default: "Neue Benachrichtigung"
     data:
       name: Data
+      description: Additional notification data (optional)
       required: false
       default: {}
+    notify_when_away:
+      name: Notify when away
+      description: >
+        Wenn false: Nachricht wird NICHT gespeichert wenn niemand zuhause ist.
+        Verhindert Endlosschleife beim Absenden von gespeicherten Nachrichten.
+      required: false
+      default: true
 
   sequence:
     - choose:
+        # Person 1 zuhause
         - conditions:
             - condition: state
-              entity_id: person.DEINE_PERSON_1       # ANPASSEN
+              entity_id: person.PERSON_1              # ⚠️ ANPASSEN
               state: "home"
           sequence:
-            - service: script.notify_me
+            - action: script.notify_me
               data:
                 title: "{{ title }}"
                 message: "{{ message }}"
-                data: "{{ data }}"
+                data: "{{ data | default({}) }}"
 
+        # Person 2 zuhause (optional)
         - conditions:
             - condition: state
-              entity_id: person.DEINE_PERSON_2       # ANPASSEN (optional)
+              entity_id: person.PERSON_2              # ⚠️ ANPASSEN
               state: "home"
           sequence:
-            - service: script.notify_wife
+            - action: script.notify_wife
               data:
                 title: "{{ title }}"
                 message: "{{ message }}"
-                data: "{{ data }}"
+                data: "{{ data | default({}) }}"
 
+        # Person 3 zuhause (optional)
+        - conditions:
+            - condition: state
+              entity_id: person.PERSON_3              # ⚠️ ANPASSEN (optional)
+              state: "home"
+          sequence:
+            - action: script.notify_valentina
+              data:
+                title: "{{ title }}"
+                message: "{{ message }}"
+                data: "{{ data | default({}) }}"
+
+      # Niemand zuhause → nur speichern wenn notify_when_away true
       default:
-        - service: script.append_pending_notification
-          data:
-            title: "{{ title }}"
-            message: "{{ message }}"
-            data: "{{ data }}"
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ notify_when_away | default(true) }}"
+              sequence:
+                - action: script.append_pending_notification
+                  data:
+                    title: "{{ title }}"
+                    message: "{{ message }}"
+                    data: "{{ data | default({}) }}"
