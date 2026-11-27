@@ -1,0 +1,31 @@
+send:
+  fields:
+    message:
+      required: true
+      example: "Die Wäsche ist fertig"
+      selector:
+        text:
+          multiline: true
+    title:
+      required: false
+      example: "Waschmaschine"
+      selector:
+        text:
+    recipients:
+      required: false
+      selector:
+        entity:
+          domain: person
+          multiple: true
+    mode:
+      required: false
+      default: home_now
+      selector:
+        select:
+          translation_key: mode
+          options:
+            - home_now
+            - on_arrival
+            - always
+
+clear_queue:

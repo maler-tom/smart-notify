@@ -1,0 +1,256 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Smart Notify ist bereits eingerichtet."
+    },
+    "step": {
+      "user": {
+        "title": "Smart Notify einrichten",
+        "description": "Smart Notify schickt Nachrichten nur an die, die zuhause sind. Wähle zuerst die erste Person. Weitere Personen, Geräte und Lautsprecher fügst du danach auf der Seite der Integration hinzu.",
+        "data": {
+          "person": "Person"
+        }
+      },
+      "notify": {
+        "title": "Benachrichtigungen für {person}",
+        "description": "Du kannst mehrere Wege wählen, z. B. Handy, Tablet und Telegram. Die Nachricht geht an alle gewählten. Das Handy ist schon vorgeschlagen.",
+        "data": {
+          "notify_services": "Benachrichtigungswege"
+        }
+      }
+    }
+  },
+  "config_subentries": {
+    "person": {
+      "initiate_flow": {
+        "user": "Person hinzufügen",
+        "reconfigure": "Benachrichtigungen ändern"
+      },
+      "entry_type": "Person",
+      "step": {
+        "user": {
+          "title": "Person hinzufügen",
+          "description": "Wer soll Nachrichten bekommen?",
+          "data": {
+            "person": "Person"
+          }
+        },
+        "notify": {
+          "title": "Benachrichtigungen für {person}",
+          "description": "Du kannst mehrere Wege wählen, z. B. Handy, Tablet und Telegram. Die Nachricht geht an alle gewählten. Das Handy ist schon vorgeschlagen.",
+          "data": {
+            "notify_services": "Benachrichtigungswege"
+          }
+        },
+        "reconfigure": {
+          "title": "Benachrichtigungen für {person}",
+          "data": {
+            "notify_services": "Benachrichtigungswege"
+          }
+        }
+      },
+      "error": {
+        "person_exists": "Diese Person gibt es schon."
+      },
+      "abort": {
+        "reconfigure_successful": "Gespeichert."
+      }
+    },
+    "speaker": {
+      "initiate_flow": {
+        "user": "Lautsprecher hinzufügen",
+        "reconfigure": "Lautsprecher bearbeiten"
+      },
+      "entry_type": "Lautsprecher (TTS)",
+      "step": {
+        "user": {
+          "title": "Lautsprecher hinzufügen",
+          "description": "Welche Art von Lautsprecher?",
+          "menu_options": {
+            "alexa": "Alexa-Gerät",
+            "tts": "Anderer Player (TTS)"
+          }
+        },
+        "alexa": {
+          "title": "Alexa-Gerät",
+          "description": "Die Ansage kommt direkt über das Echo-Gerät.",
+          "data": {
+            "name": "Name",
+            "notify_service": "Alexa-Dienst",
+            "only_home": "Nur ansagen, wenn jemand zuhause ist",
+            "quiet_from": "Ruhezeit von",
+            "quiet_to": "Ruhezeit bis"
+          },
+          "data_description": {
+            "quiet_from": "Optional. In dieser Zeit wird nichts angesagt (auch über Mitternacht, z. B. 22:00 bis 07:00).",
+            "quiet_to": "Optional. In dieser Zeit wird nichts angesagt (auch über Mitternacht, z. B. 22:00 bis 07:00)."
+          }
+        },
+        "tts": {
+          "title": "Anderer Player (TTS)",
+          "description": "Die Ansage wird mit einem TTS-Dienst auf dem Player gesprochen (z. B. Friday-Tablet).",
+          "data": {
+            "name": "Name",
+            "tts_entity": "TTS-Dienst",
+            "media_player": "Player",
+            "only_home": "Nur ansagen, wenn jemand zuhause ist",
+            "quiet_from": "Ruhezeit von",
+            "quiet_to": "Ruhezeit bis"
+          },
+          "data_description": {
+            "quiet_from": "Optional. In dieser Zeit wird nichts angesagt (auch über Mitternacht, z. B. 22:00 bis 07:00).",
+            "quiet_to": "Optional. In dieser Zeit wird nichts angesagt (auch über Mitternacht, z. B. 22:00 bis 07:00)."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Gespeichert."
+      }
+    },
+    "device": {
+      "initiate_flow": {
+        "user": "Gerät hinzufügen",
+        "reconfigure": "Gerät bearbeiten"
+      },
+      "entry_type": "Gerät",
+      "step": {
+        "user": {
+          "title": "Gerät hinzufügen",
+          "description": "Woran erkennt Smart Notify, dass das Gerät fertig ist?",
+          "menu_options": {
+            "state": "Am Zustand (z. B. Sensor meldet „fertig“ oder „aus“)",
+            "power": "An der Leistung in Watt (Steckdose mit Strommessung)"
+          }
+        },
+        "state": {
+          "title": "Gerät (nach Zustand)",
+          "description": "Die Nachricht kommt, wenn die Entität in den Ziel-Zustand wechselt (und dort für die eingestellte Zeit bleibt). Leere Nachricht = „[Name] ist fertig“.",
+          "data": {
+            "name": "Name",
+            "entity_id": "Entität",
+            "from_state": "Von Zustand (optional)",
+            "to_state": "Zu Zustand",
+            "for_minutes": "Bleibt so lange",
+            "message": "Nachricht",
+            "speakers": "Lautsprecher (Ansage)",
+            "recipients": "Empfänger (mind. 1 Auswahl)",
+            "mode": "Zustellmodus"
+          },
+          "data_description": {
+            "from_state": "Leer lassen, wenn egal ist, woher der Zustand kommt.",
+            "to_state": "Genau wie in den Entwicklerwerkzeugen, z. B. off, finished oder Ende.",
+            "message": "Normaler Text genügt. [Name] wird durch den Namen des Geräts ersetzt, z. B. „[Name] ist fertig, bitte ausräumen“.",
+            "speakers": "Leer = keine Ansage. Lautsprecher legst du im Abschnitt „Lautsprecher (TTS)“ an.",
+            "recipients": "Wer die Nachricht bekommt. Mindestens eine Person auswählen."
+          }
+        },
+        "power": {
+          "title": "Gerät (nach Watt)",
+          "description": "Die Nachricht kommt, wenn die Leistung erst über „Aktiv ab“ steigt und danach für die eingestellte Zeit unter „Fertig unter“ bleibt, z. B. Waschmaschine: über 20 W, dann 3 min unter 5 W. Leere Nachricht = „[Name] ist fertig“.",
+          "data": {
+            "name": "Name",
+            "entity_id": "Leistungs-Sensor",
+            "power_above": "Aktiv ab",
+            "power_below": "Fertig unter",
+            "for_minutes": "Bleibt darunter für",
+            "message": "Nachricht",
+            "speakers": "Lautsprecher (Ansage)",
+            "recipients": "Empfänger (mind. 1 Auswahl)",
+            "mode": "Zustellmodus"
+          },
+          "data_description": {
+            "message": "Normaler Text genügt. [Name] wird durch den Namen des Geräts ersetzt, z. B. „[Name] ist fertig, bitte ausräumen“.",
+            "speakers": "Leer = keine Ansage. Lautsprecher legst du im Abschnitt „Lautsprecher (TTS)“ an.",
+            "recipients": "Wer die Nachricht bekommt. Mindestens eine Person auswählen."
+          }
+        }
+      },
+      "error": {
+        "invalid_message": "Die Nachricht enthält geschweifte Klammern, die Home Assistant nicht versteht. Schreib einfach normalen Text und für den Gerätenamen [Name].",
+        "no_recipients": "Bitte mindestens eine Person als Empfänger auswählen.",
+        "unknown_placeholder": "In eckigen Klammern ist nur [Name] erlaubt, z. B. „Die [Name] ist fertig“. Oder schreib die Nachricht ganz ohne Klammern.",
+        "power_thresholds": "Die untere Grenze muss kleiner als die obere sein."
+      },
+      "abort": {
+        "reconfigure_successful": "Gespeichert."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Allgemeine Einstellungen",
+        "data": {
+          "arrival_delay": "Wartezeit nach Ankunft",
+          "show_panel": "In der Seitenleiste anzeigen (empfohlen)"
+        },
+        "data_description": {
+          "arrival_delay": "So lange wird nach dem Heimkommen gewartet, bevor gesammelte Nachrichten kommen.",
+          "show_panel": "Empfohlen: Häkchen gesetzt lassen. Dann hast du Geräte, Personen und Lautsprecher übersichtlich auf einer eigenen Seite in der Seitenleiste. Ohne Häkchen bleibt alles über die Integrationsseite erreichbar."
+        }
+      }
+    }
+  },
+  "selector": {
+    "mode": {
+      "options": {
+        "home_now": "Sofort an Anwesende (sonst bei Ankunft)",
+        "on_arrival": "Erst bei Ankunft",
+        "always": "Immer sofort (egal wo)"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "queue": {
+        "name": "Warteschlange"
+      }
+    },
+    "binary_sensor": {
+      "anyone_home": {
+        "name": "Jemand zuhause"
+      }
+    },
+    "button": {
+      "clear_queue": {
+        "name": "Warteschlange leeren"
+      },
+      "deliver_queue": {
+        "name": "Warteschlange jetzt zustellen"
+      }
+    }
+  },
+  "services": {
+    "send": {
+      "name": "Nachricht senden",
+      "description": "Schickt eine Nachricht über Smart Notify, abhängig davon, wer zuhause ist.",
+      "fields": {
+        "message": {
+          "name": "Nachricht",
+          "description": "Text der Nachricht."
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Titel (Alexa ignoriert ihn)."
+        },
+        "recipients": {
+          "name": "Empfänger",
+          "description": "Personen. Leer = alle eingerichteten Personen."
+        },
+        "mode": {
+          "name": "Zustellmodus",
+          "description": "Wann die Nachricht zugestellt wird."
+        }
+      }
+    },
+    "clear_queue": {
+      "name": "Warteschlange leeren",
+      "description": "Löscht alle offenen Nachrichten."
+    }
+  },
+  "exceptions": {
+    "newer_version": {
+      "message": "Dieser Eintrag stammt von einer neueren Smart-Notify-Version ({version}). Bitte Smart Notify aktualisieren."
+    }
+  }
+}

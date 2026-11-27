@@ -1,0 +1,15 @@
+{
+  "domain": "smart_notify",
+  "name": "Smart Notify",
+  "dependencies": ["http", "frontend", "panel_custom", "websocket_api"],
+  "after_dependencies": ["person", "notify"],
+  "codeowners": ["@maler-tom"],
+  "config_flow": true,
+  "documentation": "https://github.com/maler-tom/smart-notify",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/maler-tom/smart-notify/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}
