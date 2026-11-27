@@ -15,8 +15,25 @@ Alles wird in der Oberfläche eingerichtet. Kein YAML, keine Skripte, keine Auto
 
 ---
 
+## 🚀 Import in dein Home Assistant
+
+**Schritt 1: Herunterladen** (öffnet HACS in deinem Home Assistant)
+
+[![Smart Notify in HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=maler-tom&repository=smart-notify&category=integration)
+
+Dort **Herunterladen** anklicken, danach Home Assistant **neu starten**.
+
+**Schritt 2: Einrichten** (öffnet die Einrichtung von Smart Notify)
+
+[![Smart Notify zu Home Assistant hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=smart_notify)
+
+> Beim ersten Klick fragt *My Home Assistant* einmal nach der Adresse deines Home Assistant (z. B. `http://homeassistant.local:8123`). Kein HACS? Dann [ZIP-Datei herunterladen](https://github.com/maler-tom/smart-notify/releases/latest/download/smart_notify.zip) und [Weg C](#weg-c-ohne-hacs-mit-der-zip-datei) folgen.
+
+---
+
 ## Inhalt
 
+- [Import in dein Home Assistant](#-import-in-dein-home-assistant)
 - [Was kann Smart Notify?](#-was-kann-smart-notify)
 - [Voraussetzungen](#-voraussetzungen)
 - [Installation](#-installation) (HACS mit einem Klick, HACS von Hand, ZIP-Datei)

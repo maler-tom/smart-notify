@@ -5,6 +5,10 @@
     "person",
     "notify"
   ],
+  "categories": [
+    "messaging_notifications.push_notifications",
+    "presence_location"
+  ],
   "codeowners": [
     "@maler-tom"
   ],
