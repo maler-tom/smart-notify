@@ -27,7 +27,7 @@ WASHER = {
         "from_state": "running",
         "to_state": "finished",
         "for_minutes": 0,
-        "message": "{{ device_name }} ist fertig",
+        "message": "Waschmaschine ist fertig",
         "recipients": [],
         "mode": "home_now",
     },
@@ -42,7 +42,7 @@ POWER = {
         "power_above": 20.0,
         "power_below": 5.0,
         "for_minutes": 3,
-        "message": "{{ device_name }} ist fertig",
+        "message": "Trockner ist fertig",
         "recipients": [],
         "mode": "home_now",
     },
@@ -164,20 +164,10 @@ async def test_add_person_and_device_subentries(hass: HomeAssistant) -> None:
         result["flow_id"], {**data, "power_below": 10, "recipients": []}
     )
     assert bad["errors"] == {"recipients": "no_recipients"}
-    # kaputte Klammern werden schon beim Speichern abgelehnt
-    for wrong in ("{{ Die Waschmaschine  }} ist fertig", "{{ Waschmaschine }} fertig", "{{ ist fertig"):
-        bad = await hass.config_entries.subentries.async_configure(
-            result["flow_id"], {**data, "power_below": 10, "message": wrong}
-        )
-        assert bad["errors"] == {"message": "invalid_message"}, wrong
-    # andere eckige Klammern als [Name] würden wörtlich ankommen
-    for wrong in ("[Die Waschmaschine] ist fertig", "[Name] und [Gerät] fertig"):
-        bad = await hass.config_entries.subentries.async_configure(
-            result["flow_id"], {**data, "power_below": 10, "message": wrong}
-        )
-        assert bad["errors"] == {"message": "unknown_placeholder"}, wrong
+    # Nachricht ist freier Text: Klammern jeder Art werden nicht abgelehnt oder umgebaut
+    free = "[Die Waschmaschine] ist {{ fertig, [Name]"
     result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"], {**data, "power_below": 10}
+        result["flow_id"], {**data, "power_below": 10, "message": free}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
@@ -185,36 +175,45 @@ async def test_add_person_and_device_subentries(hass: HomeAssistant) -> None:
     assert device.title == "Trockner"
     assert device.data["power_below"] == 10.0
     assert device.data["trigger"] == "power"
-    assert device.data["message"] == "[Name] ist fertig"  # leer -> Vorgabe
+    assert device.data["message"] == free
     assert device.data["recipients"] == [TOM]
 
 
-async def test_name_placeholder_and_plain_text(hass: HomeAssistant) -> None:
-    """[Name] wird ersetzt, normaler Text bleibt, die alte Schreibweise geht weiter."""
+async def test_message_is_free_text(hass: HomeAssistant) -> None:
+    """Der Text kommt genau so an; leer = Gerätename + „ist fertig“."""
     hass.states.async_set(TOM, "home")
     hass.states.async_set(SUSI, "not_home")
     hass.states.async_set("sensor.waschmaschine", "running")
-    hass.states.async_set("sensor.trockner_power", "0")
+    hass.states.async_set("sensor.spueler", "running")
+    hass.states.async_set("sensor.trockner", "running")
     tom = async_mock_service(hass, "notify", "mobile_app_thomas_kurz")
     async_mock_service(hass, "notify", "mobile_app_susi_iphone")
-    washer = {**WASHER, "data": {**WASHER["data"], "message": "Die [name] ist fertig, bitte ausräumen"}}
+    washer = {**WASHER, "data": {**WASHER["data"], "message": "Die [name] ist {{ fertig, bitte ausräumen"}}
     plain = {
         **WASHER,
         "title": "Spüler",
         "data": {**WASHER["data"], "entity_id": "sensor.spueler", "message": "Geschirr ist sauber"},
     }
-    hass.states.async_set("sensor.spueler", "running")
-    await _setup(hass, [washer, plain])
+    empty = {
+        **WASHER,
+        "title": "Trockner",
+        "data": {**WASHER["data"], "entity_id": "sensor.trockner", "message": ""},
+    }
+    await _setup(hass, [washer, plain, empty])
 
-    hass.states.async_set("sensor.waschmaschine", "finished")
-    hass.states.async_set("sensor.spueler", "finished")
+    for entity in ("sensor.waschmaschine", "sensor.spueler", "sensor.trockner"):
+        hass.states.async_set(entity, "finished")
     await hass.async_block_till_done()
 
     messages = sorted(call.data["message"] for call in tom)
-    assert messages == ["Die Waschmaschine ist fertig, bitte ausräumen", "Geschirr ist sauber"]
+    assert messages == [
+        "Die [name] ist {{ fertig, bitte ausräumen",
+        "Geschirr ist sauber",
+        "Trockner ist fertig",
+    ]
 
 
-async def test_reconfigure_shows_legacy_message_as_placeholder(hass: HomeAssistant) -> None:
+async def test_reconfigure_shows_stored_message(hass: HomeAssistant) -> None:
     entry = await _setup(hass, [WASHER])
     sub = next(s for s in entry.subentries.values() if s.subentry_type == "device")
     result = await hass.config_entries.subentries.async_init(
@@ -223,7 +222,7 @@ async def test_reconfigure_shows_legacy_message_as_placeholder(hass: HomeAssista
     )
     assert result["type"] is FlowResultType.FORM and result["step_id"] == "state"
     field = next(k for k in result["data_schema"].schema if k == "message")
-    assert field.description["suggested_value"] == "[Name] ist fertig"
+    assert field.description["suggested_value"] == "Waschmaschine ist fertig"
 
 
 async def test_sends_to_whoever_is_home(hass: HomeAssistant) -> None:

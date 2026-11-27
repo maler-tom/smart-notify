@@ -7,7 +7,6 @@ sich dort einzeln hinzufügen, bearbeiten und löschen.
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 import voluptuous as vol
@@ -23,8 +22,6 @@ from homeassistant.config_entries import (
     SubentryFlowResult,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import TemplateError
-from homeassistant.helpers.template import Template
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -71,10 +68,6 @@ from .const import (
     CONF_RECIPIENTS,
     CONF_TO,
     DEFAULT_ARRIVAL_DELAY,
-    DEFAULT_MESSAGE,
-    PLACEHOLDER_NAME,
-    fill_name,
-    is_template,
     DEFAULT_POWER_ABOVE,
     DEFAULT_POWER_BELOW,
     DOMAIN,
@@ -159,7 +152,7 @@ def _common_fields(hass: HomeAssistant, entry: ConfigEntry) -> dict[Any, Any]:
         )
     return {
         **extra,
-        vol.Optional(CONF_MESSAGE, default=DEFAULT_MESSAGE): TextSelector(
+        vol.Optional(CONF_MESSAGE): TextSelector(
             TextSelectorConfig(multiline=True)
         ),
         # Pflichtfeld: mindestens eine Person muss gewählt werden (kein „leer = alle“ mehr)
@@ -231,34 +224,6 @@ def _power_schema(hass: HomeAssistant, entry: ConfigEntry) -> vol.Schema:
     )
 
 
-_LEGACY_NAME = re.compile(r"\{\{\s*device_name\s*\}\}")
-
-
-_OTHER_BRACKETS = re.compile(r"\[[^\]]*\]")
-
-
-def _message_error(hass: HomeAssistant, message: str | None, name: str) -> str | None:
-    """Prüft die Nachricht, bevor sie gespeichert wird; gibt den Fehler-Schlüssel zurück.
-
-    Normaler Text und „[Name]“ sind immer in Ordnung. Andere eckige Klammern
-    (z. B. „[Die Waschmaschine]“) würden wörtlich ankommen und gelten als Fehler.
-    Bei {{ }} oder {% %} wird probeweise ausgewertet; unbekannte Namen in den
-    Klammern (z. B. „{{ Die Waschmaschine }}“) gelten ebenfalls als Fehler.
-    """
-    text = fill_name((message or "").strip(), name)
-    if _OTHER_BRACKETS.search(PLACEHOLDER_NAME.sub("", (message or ""))):
-        return "unknown_placeholder"
-    if not is_template(text):
-        return None
-    try:
-        Template(text, hass).async_render(
-            {"device_name": name}, parse_result=False, strict=True
-        )
-    except TemplateError:
-        return "invalid_message"
-    return None
-
-
 def _clean_device(user_input: dict[str, Any]) -> dict[str, Any]:
     """Eingabe in das gespeicherte Format bringen (ohne den Namen, der ist der Titel)."""
     data = {k: v for k, v in user_input.items() if k != "name"}
@@ -270,7 +235,7 @@ def _clean_device(user_input: dict[str, Any]) -> dict[str, Any]:
     if CONF_ABOVE in data:
         data[CONF_ABOVE] = float(data[CONF_ABOVE])
         data[CONF_BELOW] = float(data[CONF_BELOW])
-    data[CONF_MESSAGE] = (data.get(CONF_MESSAGE) or "").strip() or DEFAULT_MESSAGE
+    data[CONF_MESSAGE] = (data.get(CONF_MESSAGE) or "").strip()  # freier Text, leer erlaubt
     data[CONF_RECIPIENTS] = data.get(CONF_RECIPIENTS) or []
     return data
 
@@ -487,10 +452,6 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                 errors["base"] = "power_thresholds"
             elif not user_input.get(CONF_RECIPIENTS):
                 errors[CONF_RECIPIENTS] = "no_recipients"
-            elif msg_error := _message_error(
-                self.hass, user_input.get(CONF_MESSAGE), user_input["name"].strip()
-            ):
-                errors[CONF_MESSAGE] = msg_error
             else:
                 data = _clean_device(user_input)
                 data[CONF_TRIGGER] = trigger
@@ -505,9 +466,6 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         if suggested is None and reconfigure:
             sub = self._get_reconfigure_subentry()
             suggested = {**sub.data, "name": sub.title}
-            if isinstance(msg := suggested.get(CONF_MESSAGE), str):
-                # alte Schreibweise lesbar anzeigen; beim Speichern bleibt es gleichwertig
-                suggested[CONF_MESSAGE] = _LEGACY_NAME.sub("[Name]", msg)
         return self.async_show_form(
             step_id=trigger,
             data_schema=self.add_suggested_values_to_schema(schema, suggested),

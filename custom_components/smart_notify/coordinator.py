@@ -10,9 +10,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_HOME
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
-from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
-from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -20,9 +18,6 @@ from .const import (
     CONF_ARRIVAL_DELAY,
     CONF_BELOW,
     CONF_TRIGGER,
-    DEFAULT_MESSAGE,
-    fill_name,
-    is_template,
     DEFAULT_POWER_ABOVE,
     DEFAULT_POWER_BELOW,
     CONF_KIND,
@@ -300,9 +295,9 @@ class SmartNotifyCoordinator:
 
     async def _async_fire_device(self, device: dict[str, Any]) -> None:
         name = device.get(CONF_NAME, "")
-        variables = {"device_name": name}
-        title = self._render(fill_name(device.get(CONF_TITLE) or DEFAULT_TITLE, name), variables)
-        message = self._render(fill_name(device.get(CONF_MESSAGE) or DEFAULT_MESSAGE, name), variables)
+        title = device.get(CONF_TITLE) or DEFAULT_TITLE
+        # freier Text, genau wie gespeichert; leer = „<Gerätename> ist fertig“
+        message = (device.get(CONF_MESSAGE) or "").strip() or f"{name} ist fertig"
         _LOGGER.debug("Gerät %s ausgelöst: %s", device.get(CONF_NAME), message)
         await self.async_notify(
             message=message,
@@ -311,15 +306,6 @@ class SmartNotifyCoordinator:
             mode=device.get(CONF_MODE, MODE_HOME),
             speakers=device.get(CONF_SPEAKERS),
         )
-
-    def _render(self, text: str, variables: dict[str, Any]) -> str:
-        if not is_template(text):
-            return text
-        try:
-            return str(Template(text, self.hass).async_render(variables, parse_result=False))
-        except TemplateError as err:
-            _LOGGER.warning("Template-Fehler in '%s': %s", text, err)
-            return text
 
     # ------------------------------------------------------------------
     # Zustellung

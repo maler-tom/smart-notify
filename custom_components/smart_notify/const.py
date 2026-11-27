@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
 DOMAIN = "smart_notify"
 
 # Personen
@@ -54,20 +52,6 @@ CONF_PLAYER = "media_player"
 CONF_ONLY_HOME = "only_home"
 CONF_QUIET_FROM = "quiet_from"
 CONF_QUIET_TO = "quiet_to"
-DEFAULT_MESSAGE = "[Name] ist fertig"
-# „[Name]“ wird durch den Gerätenamen ersetzt (Groß-/Kleinschreibung egal).
-# Ältere Einträge mit „{{ device_name }}“ funktionieren weiter (HA-Template).
-PLACEHOLDER_NAME = re.compile(r"\[\s*name\s*\]", re.IGNORECASE)
-
-
-def fill_name(text: str, name: str) -> str:
-    """[Name] im Text durch den Gerätenamen ersetzen."""
-    return PLACEHOLDER_NAME.sub(lambda _m: name, text)
-
-
-def is_template(text: str) -> bool:
-    return "{{" in text or "{%" in text
-
 # Allgemein
 CONF_ARRIVAL_DELAY = "arrival_delay"
 CONF_SHOW_PANEL = "show_panel"  # Seite „Smart Notify“ in der Seitenleiste

@@ -124,7 +124,7 @@
         },
         "state": {
           "title": "Gerät (nach Zustand)",
-          "description": "Die Nachricht kommt, wenn die Entität in den Ziel-Zustand wechselt (und dort für die eingestellte Zeit bleibt). Leere Nachricht = „[Name] ist fertig“.",
+          "description": "Die Nachricht kommt, wenn die Entität in den Ziel-Zustand wechselt (und dort für die eingestellte Zeit bleibt). Leere Nachricht = Gerätename plus „ist fertig“.",
           "data": {
             "name": "Name",
             "entity_id": "Entität",
@@ -139,14 +139,14 @@
           "data_description": {
             "from_state": "Leer lassen, wenn egal ist, woher der Zustand kommt.",
             "to_state": "Genau wie in den Entwicklerwerkzeugen, z. B. off, finished oder Ende.",
-            "message": "Normaler Text genügt. [Name] wird durch den Namen des Geräts ersetzt, z. B. „[Name] ist fertig, bitte ausräumen“.",
+            "message": "Freier Text, er kommt genau so an. Leer lassen = Gerätename plus „ist fertig“, z. B. „Waschmaschine ist fertig“.",
             "speakers": "Leer = keine Ansage. Lautsprecher legst du im Abschnitt „Lautsprecher (TTS)“ an.",
             "recipients": "Wer die Nachricht bekommt. Mindestens eine Person auswählen."
           }
         },
         "power": {
           "title": "Gerät (nach Watt)",
-          "description": "Die Nachricht kommt, wenn die Leistung erst über „Aktiv ab“ steigt und danach für die eingestellte Zeit unter „Fertig unter“ bleibt, z. B. Waschmaschine: über 20 W, dann 3 min unter 5 W. Leere Nachricht = „[Name] ist fertig“.",
+          "description": "Die Nachricht kommt, wenn die Leistung erst über „Aktiv ab“ steigt und danach für die eingestellte Zeit unter „Fertig unter“ bleibt, z. B. Waschmaschine: über 20 W, dann 3 min unter 5 W. Leere Nachricht = Gerätename plus „ist fertig“.",
           "data": {
             "name": "Name",
             "entity_id": "Leistungs-Sensor",
@@ -159,16 +159,14 @@
             "mode": "Zustellmodus"
           },
           "data_description": {
-            "message": "Normaler Text genügt. [Name] wird durch den Namen des Geräts ersetzt, z. B. „[Name] ist fertig, bitte ausräumen“.",
+            "message": "Freier Text, er kommt genau so an. Leer lassen = Gerätename plus „ist fertig“, z. B. „Waschmaschine ist fertig“.",
             "speakers": "Leer = keine Ansage. Lautsprecher legst du im Abschnitt „Lautsprecher (TTS)“ an.",
             "recipients": "Wer die Nachricht bekommt. Mindestens eine Person auswählen."
           }
         }
       },
       "error": {
-        "invalid_message": "Die Nachricht enthält geschweifte Klammern, die Home Assistant nicht versteht. Schreib einfach normalen Text und für den Gerätenamen [Name].",
         "no_recipients": "Bitte mindestens eine Person als Empfänger auswählen.",
-        "unknown_placeholder": "In eckigen Klammern ist nur [Name] erlaubt, z. B. „Die [Name] ist fertig“. Oder schreib die Nachricht ganz ohne Klammern.",
         "power_thresholds": "Die untere Grenze muss kleiner als die obere sein."
       },
       "abort": {

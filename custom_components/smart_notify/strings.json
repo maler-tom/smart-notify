@@ -124,7 +124,7 @@
         },
         "state": {
           "title": "Device (by state)",
-          "description": "Fires when the entity changes to the target state (and stays there for the chosen time). Empty message = \"[name] is done\".",
+          "description": "Fires when the entity changes to the target state (and stays there for the chosen time). Empty message = device name plus \"is done\".",
           "data": {
             "name": "Name",
             "entity_id": "Entity",
@@ -139,14 +139,14 @@
           "data_description": {
             "from_state": "Leave empty if the previous state doesn't matter.",
             "to_state": "Exactly as shown in Developer tools, e.g. off or finished.",
-            "message": "Plain text is fine. [Name] is replaced by the device name, e.g. “[Name] is done, please unload”.",
+            "message": "Free text, sent exactly as written. Leave empty = device name plus “is done”, e.g. “Washing machine is done”.",
             "speakers": "Empty = no announcement. Add speakers in the \"Speaker (TTS)\" section.",
             "recipients": "Who gets the message. Select at least one person."
           }
         },
         "power": {
           "title": "Device (by power)",
-          "description": "Fires when the power first rises above \"Active above\" and then stays below \"Finished below\" for the chosen time, e.g. washing machine: above 20 W, then below 5 W for 3 min. Empty message = \"[name] is done\".",
+          "description": "Fires when the power first rises above \"Active above\" and then stays below \"Finished below\" for the chosen time, e.g. washing machine: above 20 W, then below 5 W for 3 min. Empty message = device name plus \"is done\".",
           "data": {
             "name": "Name",
             "entity_id": "Power sensor",
@@ -159,16 +159,14 @@
             "mode": "Delivery mode"
           },
           "data_description": {
-            "message": "Plain text is fine. [Name] is replaced by the device name, e.g. “[Name] is done, please unload”.",
+            "message": "Free text, sent exactly as written. Leave empty = device name plus “is done”, e.g. “Washing machine is done”.",
             "speakers": "Empty = no announcement. Add speakers in the \"Speaker (TTS)\" section.",
             "recipients": "Who gets the message. Select at least one person."
           }
         }
       },
       "error": {
-        "invalid_message": "The message contains curly braces Home Assistant cannot understand. Just write plain text and use [Name] for the device name.",
         "no_recipients": "Please select at least one person as recipient.",
-        "unknown_placeholder": "Only [Name] is allowed in square brackets, e.g. “[Name] is done”. Or write the message without brackets.",
         "power_thresholds": "The lower limit must be below the upper limit."
       },
       "abort": {
