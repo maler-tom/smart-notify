@@ -476,4 +476,7 @@ class SmartNotifyPanel extends HTMLElement {
   }
 }
 
-customElements.define("smart-notify-panel", SmartNotifyPanel);
+// Nach einem Update kann der Browser die neue Fassung zusätzlich laden: nur einmal anmelden
+if (!customElements.get("smart-notify-panel")) {
+  customElements.define("smart-notify-panel", SmartNotifyPanel);
+}
