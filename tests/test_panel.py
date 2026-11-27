@@ -117,3 +117,28 @@ async def test_alexa_speaker_uses_player_name(hass: HomeAssistant, hass_ws_clien
     await client.send_json({"id": 1, "type": f"{DOMAIN}/overview"})
     speakers = {s["title"]: s["lines"][0] for s in (await client.receive_json())["result"]["speakers"]}
     assert speakers == {"Küche": "Alexa: Küche Echo", "Alle": "Alexa: alle Alexa-Geräte"}
+
+
+async def test_reconfigure_sends_saved_values_besides_defaults(hass: HomeAssistant, hass_client) -> None:
+    """Beim Bearbeiten stehen gespeicherter Wert UND Vorgabe in der Antwort.
+
+    Die Seite muss den gespeicherten Wert (suggested_value) vor der Vorgabe (default)
+    nehmen, sonst würde Speichern die echten Einstellungen überschreiben.
+    """
+    custom = {
+        **WASHER,
+        "data": {**WASHER["data"], "mode": "always", "for_minutes": 7, "message": "Hallo [Name]"},
+    }
+    entry = await _setup(hass, [custom])
+    sub_id = next(s.subentry_id for s in entry.subentries.values() if s.title == "Waschmaschine")
+    client = await hass_client()
+    resp = await client.post(
+        "/api/config/config_entries/subentries/flow",
+        json={"handler": [entry.entry_id, "device"], "subentry_id": sub_id},
+    )
+    form = await resp.json()
+    items = {i["name"]: i for i in form["data_schema"]}
+    assert items["mode"]["description"]["suggested_value"] == "always"
+    assert items["mode"]["default"] == "home_now"
+    assert items["for_minutes"]["description"]["suggested_value"] == 7
+    assert items["message"]["description"]["suggested_value"] == "Hallo [Name]"

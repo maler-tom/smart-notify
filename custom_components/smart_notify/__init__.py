@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from types import MappingProxyType
 
 import voluptuous as vol
@@ -42,6 +43,8 @@ from .const import (
 )
 from .coordinator import SmartNotifyCoordinator
 from .panel import async_register_panel, async_remove_panel, async_setup_websocket
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
 
@@ -97,7 +100,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartNotifyConfigEntry) 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     if entry.options.get(CONF_SHOW_PANEL, DEFAULT_SHOW_PANEL):
-        await async_register_panel(hass, entry)
+        try:
+            await async_register_panel(hass, entry)
+        except Exception:  # noqa: BLE001 - die Oberfläche darf die Funktion nicht stoppen
+            _LOGGER.warning("Seite „Smart Notify“ konnte nicht angelegt werden", exc_info=True)
     return True
 
 

@@ -83,8 +83,19 @@ class SmartNotifyPanel extends HTMLElement {
         <button id="refresh" data-act="refresh" title="Aktualisieren"><ha-icon icon="mdi:refresh"></ha-icon></button></header>
       <main id="main"></main>
       <div id="dlg"></div>`;
+    this.shadowRoot.addEventListener("mousedown", (ev) => {
+      this._downOnBackdrop = ev.target.id === "dlg";
+    });
     this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
-    window.addEventListener("focus", () => this._started && !this._flow && this._load());
+    this._onFocus = () => this._started && !this._flow && this._load();
+  }
+
+  connectedCallback() {
+    window.addEventListener("focus", this._onFocus);
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener("focus", this._onFocus);
   }
 
   set hass(hass) {
@@ -107,9 +118,18 @@ class SmartNotifyPanel extends HTMLElement {
   }
 
   _ensureMenu() {
-    if (this._menu || !customElements.get("ha-menu-button")) return;
+    if (this._menu) return;
+    if (!customElements.get("ha-menu-button")) {
+      // ha-menu-button wird von HA erst später geladen: abwarten und dann einbauen
+      if (!this._menuWaiting) {
+        this._menuWaiting = true;
+        customElements.whenDefined("ha-menu-button").then(() => this._ensureMenu());
+      }
+      return;
+    }
     this._menu = document.createElement("ha-menu-button");
     this._menu.hass = this._hass;
+    this._menu.narrow = this._narrow;
     this.shadowRoot.getElementById("menu").appendChild(this._menu);
   }
 
@@ -129,15 +149,17 @@ class SmartNotifyPanel extends HTMLElement {
     const language = this._hass.language || "de";
     if (this._trLang === language) return;
     this._tr = {};
+    let loaded = 0;
     for (const category of ["config_subentries", "selector"]) {
       try {
         const res = await this._hass.callWS({ type: "frontend/get_translations", language, category, integration: [DOMAIN] });
         Object.assign(this._tr, res.resources || {});
+        loaded += 1;
       } catch (e) {
         /* ohne Übersetzung zeigt die Seite die technischen Namen */
       }
     }
-    this._trLang = language;
+    if (loaded) this._trLang = language;
   }
 
   _t(key, placeholders) {
@@ -192,14 +214,18 @@ class SmartNotifyPanel extends HTMLElement {
   _click(ev) {
     const target = ev.target.closest("[data-act]");
     if (!target) {
-      if (ev.target.id === "dlg") this._closeFlow(true);
+      if (ev.target.id === "dlg" && this._downOnBackdrop) this._closeFlow(true);
       return;
     }
     const { act, key, type, id, name, option } = target.dataset;
     switch (act) {
       case "toggle":
         this._open[key] = !(this._open[key] !== false);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this._open));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this._open));
+        } catch (e) {
+          /* z. B. privater Modus: dann wird der Zustand nur nicht gemerkt */
+        }
         target.closest(".card").classList.toggle("open", this._open[key]);
         break;
       case "add":
@@ -221,7 +247,7 @@ class SmartNotifyPanel extends HTMLElement {
         this._closeFlow(true);
         break;
       case "save":
-        this._submit(this._flow.data);
+        if (this._flow) this._submit(this._flow.data);
         break;
     }
   }
@@ -237,19 +263,48 @@ class SmartNotifyPanel extends HTMLElement {
   }
 
   // ---------------------------------------------------------------- Dialog
-  async _startFlow(type, subentryId) {
-    this._flow = { type, reconfigure: !!subentryId, result: null, data: {}, busy: true, error: null };
-    this._renderDialog();
+  // ha-form gehört zum Konfigurations-Teil von HA und ist nicht immer schon geladen
+  async _ensureHaForm() {
+    if (customElements.get("ha-form")) return;
     try {
-      await this._loadTranslations();
+      const helpers = await window.loadCardHelpers?.();
+      const card = await helpers?.createCardElement({ type: "entities", entities: [] });
+      await card?.constructor?.getConfigElement?.();
+    } catch (e) {
+      /* weiter mit dem Abwarten */
+    }
+    await Promise.race([
+      customElements.whenDefined("ha-form"),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
+  }
+
+  async _startFlow(type, subentryId) {
+    const flow = { type, reconfigure: !!subentryId, result: null, data: {}, busy: true, error: null };
+    this._flow = flow;
+    this._renderDialog();
+    let started = null;
+    try {
+      await Promise.all([this._loadTranslations(), this._ensureHaForm()]);
       const body = { handler: [this._entryId, type] };
       if (subentryId) body.subentry_id = subentryId;
-      this._handleResult(await this._hass.callApi("POST", "config/config_entries/subentries/flow", body));
+      started = await this._hass.callApi("POST", "config/config_entries/subentries/flow", body);
     } catch (e) {
-      this._flow.busy = false;
-      this._flow.error = this._errorText(e);
-      this._renderDialog();
+      if (this._flow === flow) {
+        flow.busy = false;
+        flow.error = this._errorText(e);
+        this._renderDialog();
+      }
+      return;
     }
+    if (this._flow !== flow) {
+      // Dialog wurde schon geschlossen: den gestarteten Ablauf auf dem Server aufräumen
+      if (started?.flow_id) {
+        this._hass.callApi("DELETE", `config/config_entries/subentries/flow/${started.flow_id}`).catch(() => {});
+      }
+      return;
+    }
+    this._handleResult(started);
   }
 
   async _submit(payload) {
@@ -271,6 +326,10 @@ class SmartNotifyPanel extends HTMLElement {
   }
 
   _errorText(e) {
+    const fields = e?.body?.errors;
+    if (fields && typeof fields === "object") {
+      return "Bitte alle Pflichtfelder ausfüllen und die Eingaben prüfen.";
+    }
     return e?.message || e?.body?.message || (typeof e === "string" ? e : "Das hat nicht geklappt.");
   }
 
@@ -293,9 +352,11 @@ class SmartNotifyPanel extends HTMLElement {
 
   _initialData(schema) {
     const data = {};
+    // Wie das HA-Frontend: erst der gespeicherte Wert (suggested_value), dann die Vorgabe
     for (const item of schema) {
-      if (item.default !== undefined) data[item.name] = item.default;
-      else if (item.description?.suggested_value !== undefined) data[item.name] = item.description.suggested_value;
+      const suggested = item.description?.suggested_value;
+      if (suggested !== undefined && suggested !== null) data[item.name] = suggested;
+      else if (item.default !== undefined) data[item.name] = item.default;
     }
     return data;
   }

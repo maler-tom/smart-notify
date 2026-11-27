@@ -34,7 +34,6 @@ from .const import (
     CONF_SPEAKERS,
     CONF_TO,
     CONF_TRIGGER,
-    CONF_TTS_ENTITY,
     CONF_NOTIFY,
     DOMAIN,
     KIND_TTS,
@@ -88,7 +87,7 @@ def _alexa_name(hass: HomeAssistant, service: str | None) -> str:
     return slug.replace("_", " ")
 
 
-def _person_item(hass: HomeAssistant, sub) -> dict[str, Any]:
+def _person_item(sub) -> dict[str, Any]:
     services = person_services(sub.data)
     return {
         "id": sub.subentry_id,
@@ -163,7 +162,7 @@ def build_overview(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     return {
         "entry_id": entry.entry_id,
         "devices": [_device_item(hass, entry, s) for s in of_type(SUBENTRY_DEVICE)],
-        "persons": [_person_item(hass, s) for s in of_type(SUBENTRY_PERSON)],
+        "persons": [_person_item(s) for s in of_type(SUBENTRY_PERSON)],
         "speakers": [_speaker_item(hass, s) for s in of_type(SUBENTRY_SPEAKER)],
     }
 
