@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from datetime import time
 import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_HOME
+from homeassistant.const import STATE_HOME, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 from homeassistant.util import dt as dt_util
@@ -34,7 +35,6 @@ from .const import (
     TRIGGER_POWER,
     TRIGGER_STATE,
     CONF_DEVICE_ID,
-    CONF_DEVICES,
     CONF_ENTITY,
     CONF_FOR,
     CONF_FROM,
@@ -44,7 +44,6 @@ from .const import (
     CONF_NOTIFY,
     person_services,
     CONF_PERSON,
-    CONF_PERSONS,
     CONF_RECIPIENTS,
     CONF_TITLE,
     CONF_TO,
@@ -91,6 +90,8 @@ class SmartNotifyCoordinator:
         self._unsubs: list[Callable[[], None]] = []
         self._device_timers: dict[str, Callable[[], None]] = {}
         self._arrival_timer: Callable[[], None] | None = None
+        # Verhindert doppelte Zustellung (Ankunfts-Timer und Knopf gleichzeitig)
+        self._deliver_lock = asyncio.Lock()
         # Watt-Geräte, die über der oberen Grenze waren (bereit zum Auslösen)
         self._power_armed: set[str] = set()
 
@@ -176,15 +177,16 @@ class SmartNotifyCoordinator:
 
     async def async_deliver_queue(self) -> None:
         """Stellt offene Nachrichten an alle Empfänger zu, die jetzt zuhause sind."""
-        delivered: list[dict[str, Any]] = []
-        for item in list(self.queue.items):
-            recipients = self._valid_recipients(item.get(CONF_RECIPIENTS))
-            at_home = [p for p in recipients if self.is_home(p)]
-            if not at_home:
-                continue
-            await self._async_send(item.get(CONF_TITLE), item[CONF_MESSAGE], at_home)
-            delivered.append(item)
-        await self.queue.async_remove(delivered)
+        async with self._deliver_lock:
+            delivered: list[dict[str, Any]] = []
+            for item in list(self.queue.items):
+                recipients = self._valid_recipients(item.get(CONF_RECIPIENTS))
+                at_home = [p for p in recipients if self.is_home(p)]
+                if not at_home:
+                    continue
+                await self._async_send(item.get(CONF_TITLE), item[CONF_MESSAGE], at_home)
+                delivered.append(item)
+            await self.queue.async_remove(delivered)
 
     # ------------------------------------------------------------------
     # Geräte-Auslöser
@@ -212,7 +214,8 @@ class SmartNotifyCoordinator:
                     cancel()
                 continue
 
-            if old is None or old.state == new.state:
+            # „nicht erreichbar“ -> Ziel ist kein Fertig-Signal (z. B. WLAN-Aussetzer)
+            if old is None or old.state == new.state or old.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
                 continue
             from_state = device.get(CONF_FROM) or ""
             if from_state and old.state != from_state:

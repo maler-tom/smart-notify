@@ -198,7 +198,7 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     async_remove_panel(hass)
     # Änderungszeit als Version: nach Updates lädt der Browser die neue Datei
-    version = int(_JS_FILE.stat().st_mtime)
+    version = await hass.async_add_executor_job(lambda: int(_JS_FILE.stat().st_mtime))
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL,

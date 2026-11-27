@@ -632,3 +632,47 @@ async def test_section_order(hass: HomeAssistant) -> None:
         "speaker",
         "device",
     ]
+
+
+async def test_manifest_keys_sorted() -> None:
+    """hassfest verlangt: domain, name, dann alphabetisch."""
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).parent.parent / "custom_components" / "smart_notify" / "manifest.json"
+    keys = list(json.loads(path.read_text(encoding="utf-8")))
+    assert keys[:2] == ["domain", "name"]
+    assert keys[2:] == sorted(keys[2:])
+
+
+async def test_unavailable_to_target_does_not_fire(hass: HomeAssistant) -> None:
+    """Ein WLAN-Aussetzer (unavailable -> Ziel-Zustand) ist kein „fertig“."""
+    hass.states.async_set(TOM, "home")
+    hass.states.async_set("sensor.waschmaschine", "unavailable")
+    tom = async_mock_service(hass, "notify", "mobile_app_thomas_kurz")
+    await _setup(hass, [WASHER])
+
+    hass.states.async_set("sensor.waschmaschine", "finished")
+    await hass.async_block_till_done()
+    assert len(tom) == 0
+
+    hass.states.async_set("sensor.waschmaschine", "running")
+    hass.states.async_set("sensor.waschmaschine", "finished")
+    await hass.async_block_till_done()
+    assert len(tom) == 1
+
+
+async def test_deliver_queue_never_sends_twice(hass: HomeAssistant) -> None:
+    """Ankunfts-Timer und Knopf gleichzeitig: jede Nachricht geht nur einmal raus."""
+    import asyncio
+
+    hass.states.async_set(TOM, "home")
+    hass.states.async_set(SUSI, "not_home")
+    tom = async_mock_service(hass, "notify", "mobile_app_thomas_kurz")
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    await coordinator.queue.async_add({"title": None, "message": "Hallo", "recipients": [TOM]})
+
+    await asyncio.gather(coordinator.async_deliver_queue(), coordinator.async_deliver_queue())
+    assert [call.data["message"] for call in tom] == ["Hallo"]
+    assert coordinator.queue.items == []

@@ -166,7 +166,7 @@ class SmartNotifyPanel extends HTMLElement {
     let text = this._tr[key];
     if (text === undefined) return undefined;
     for (const [name, value] of Object.entries(placeholders || {})) {
-      text = text.replaceAll(`{${name}}`, value);
+      text = text.replaceAll(`{${name}}`, () => String(value));
     }
     return text;
   }
@@ -247,7 +247,7 @@ class SmartNotifyPanel extends HTMLElement {
         this._closeFlow(true);
         break;
       case "save":
-        if (this._flow) this._submit(this._flow.data);
+        this._save();
         break;
     }
   }
@@ -304,7 +304,28 @@ class SmartNotifyPanel extends HTMLElement {
       }
       return;
     }
-    this._handleResult(started);
+    this._handleResult(started, flow);
+  }
+
+  // Speichern: wie HA leere Werte weglassen und fehlende Pflichtfelder gleich melden
+  _save() {
+    const flow = this._flow;
+    if (!flow?.result || flow.busy) return;
+    const isEmpty = (v) => v === undefined || v === null || v === "";
+    const payload = {};
+    for (const [key, value] of Object.entries(flow.data || {})) {
+      if (!isEmpty(value)) payload[key] = value;
+    }
+    const step = `component.${DOMAIN}.config_subentries.${flow.type}.step.${flow.result.step_id}`;
+    const missing = (flow.result.data_schema || [])
+      .filter((item) => item.required && isEmpty(payload[item.name]))
+      .map((item) => this._t(`${step}.data.${item.name}`) || item.name);
+    if (missing.length) {
+      flow.error = `Bitte ausfüllen: ${missing.join(", ")}`;
+      this._renderDialog();
+      return;
+    }
+    this._submit(payload);
   }
 
   async _submit(payload) {
@@ -312,17 +333,30 @@ class SmartNotifyPanel extends HTMLElement {
     if (!flow?.result?.flow_id || flow.busy) return;
     flow.busy = true;
     flow.error = null;
-    this._renderDialog(true);
+    this._renderDialog();
+    let result;
     try {
-      const result = await this._hass.callApi(
+      result = await this._hass.callApi(
         "POST", `config/config_entries/subentries/flow/${flow.result.flow_id}`, payload
       );
-      this._handleResult(result);
     } catch (e) {
-      flow.busy = false;
-      flow.error = this._errorText(e);
-      this._renderDialog();
+      if (this._flow === flow) {
+        flow.busy = false;
+        flow.error = this._errorText(e);
+        this._renderDialog();
+      }
+      return;
     }
+    if (this._flow !== flow) {
+      // Dialog wurde währenddessen geschlossen: Ergebnis nicht auf einen anderen Dialog anwenden
+      if (result.type === "create_entry" || (result.type === "abort" && result.reason === "reconfigure_successful")) {
+        this._load();
+      } else if (result.flow_id) {
+        this._hass.callApi("DELETE", `config/config_entries/subentries/flow/${result.flow_id}`).catch(() => {});
+      }
+      return;
+    }
+    this._handleResult(result, flow);
   }
 
   _errorText(e) {
@@ -333,9 +367,8 @@ class SmartNotifyPanel extends HTMLElement {
     return e?.message || e?.body?.message || (typeof e === "string" ? e : "Das hat nicht geklappt.");
   }
 
-  _handleResult(result) {
-    const flow = this._flow;
-    if (!flow) return;
+  _handleResult(result, flow) {
+    if (!flow || this._flow !== flow) return;
     flow.busy = false;
     if (result.type === "create_entry" || (result.type === "abort" && result.reason === "reconfigure_successful")) {
       this._closeFlow(false);

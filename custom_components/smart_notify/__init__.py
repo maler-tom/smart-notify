@@ -96,6 +96,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartNotifyConfigEntry) 
     coordinator = SmartNotifyCoordinator(hass, entry)
     await coordinator.async_start()
     entry.runtime_data = coordinator
+    # Listener und Timer auch dann aufräumen, wenn der Start danach scheitert
+    entry.async_on_unload(coordinator.async_stop)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
@@ -110,7 +112,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartNotifyConfigEntry) 
 async def async_unload_entry(hass: HomeAssistant, entry: SmartNotifyConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        entry.runtime_data.async_stop()
         async_remove_panel(hass)
     return unloaded
 
